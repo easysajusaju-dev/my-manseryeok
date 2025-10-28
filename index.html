@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>나의 만세력</title>
+    <style>
+        body { font-family: sans-serif; max-width: 500px; margin: 20px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        h1, h2 { text-align: center; }
+        .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .input-group { display: flex; flex-direction: column; }
+        label { margin-bottom: 5px; font-size: 0.9em; }
+        input, select { padding: 8px; font-size: 1em; }
+        button { width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; font-size: 1.1em; cursor: pointer; }
+        #result { margin-top: 20px; background: #f9f9f9; padding: 15px; border-radius: 4px; font-family: 'Courier New', monospace; white-space: pre; font-size: 1.1em; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <h1>🌟 나의 만세력 🌟</h1>
+    <div class="input-grid">
+        <div class="input-group">
+            <label for="year">년</label>
+            <input type="number" id="year" value="1990">
+        </div>
+        <div class="input-group">
+            <label for="month">월</label>
+            <input type="number" id="month" value="1">
+        </div>
+        <div class="input-group">
+            <label for="day">일</label>
+            <input type="number" id="day" value="1">
+        </div>
+        <div class="input-group">
+            <label for="hour">시</label>
+            <input type="number" id="hour" value="12">
+        </div>
+    </div>
+    <div class="input-grid">
+        <div class="input-group">
+            <label for="gender">성별</label>
+            <select id="gender">
+                <option value="남">남자</option>
+                <option value="여">여자</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="isLunar">달력</label>
+            <select id="isLunar">
+                <option value="false">양력</option>
+                <option value="true">음력 (평달)</option>
+                <option value="윤달">음력 (윤달)</option>
+            </select>
+        </div>
+    </div>
+    <button onclick="calculateSaju()">사주 보기</button>
+    <div id="result" style="display: none;"></div>
+
+    <!-- 여기서부터 만세력 엔진 코드입니다. 건드리지 마세요. -->
+    <script>
+        "use strict";var kr_holidays=[{name:"신정",month:1,day:1,type:"양력"},{name:"설날",month:1,day:1,type:"음력",duration:3},{name:"삼일절",month:3,day:1,type:"양력"},{name:"어린이날",month:5,day:5,type:"양력"},{name:"부처님오신날",month:4,day:8,type:"음력"},{name:"현충일",month:6,day:6,type:"양력"},{name:"광복절",month:8,day:15,type:"양력"},{name:"추석",month:8,day:15,type:"음력",duration:3},{name:"개천절",month:10,day:3,type:"양력"},{name:
+        "한글날",month:10,day:9,type:"양력"},{name:"크리스마스",month:12,day:25,type:"양력"}];var lunar_month_days=[[30,29,30,29,30,29,30,30,29,30,29,30],[30,29,30,29,30,29,30,30,29,30,30,29],[30,29,30,30,29,30,29,30,30,29,30,30],[29,30,29,30,29,30,30,29,30,30,30,29],[30,29,29,30,29,30,30,29,30,30,30,29],[30,29,29,30,30,29,30,29,30,30,30,30],[29,30,29,29,30,29,30,29,30,30,30,30],[30,29,30,29,29,30,29,30,29,30,30,30],[30,30,29,30,29,29,30,29,30,29,30,30],[30,30,29,30,29,30,29,30,29,30,29,30],[30,30,29,30,30,29,30,29,30,29,30,29],
+        [30,30,30,29,30,29,30,29,30,29,30,29],[30,30,30,29,30,30,29,30,29,30,29,30],[29,30,30,29,30,30,29,30,29,30,29,30],[29,30,29,30,30,29,30,30,29,30,29,30],[29,30,29,30,30,29,30,30,29,30,30,29],[30,29,29,30,30,29,30,30,29,30,30,30],[29,30,29,29,30,29,30,30,30,29,30,30],[30,29,30,29,29,30,29,30,30,30,29,30,30],[30,29,30,29,29,30,29,30,30,29,30,30],[30,30,29,30,29,29,30,29,30,29,30,30],[30,30,29,30,29,30,29,30,29,30,29,30],[30,30,29,30,30,29,30,29,30,29,30,29],[30,30,30,29,30,29,30,29,30,29,30,29]];
+        var lunar_month_yoon=[0,0,0,0,0,5,0,0,0,0,4,0,0,0,0,0,3,0,0,7,0,0,0,0,6,0,0,0,4,0,0,8,0,0,0,0,5,0,0,0,0,4,0,0,0,0,2,0,0,0,7,0,0,0,5,0,0,0,0,3,0,0,8,0,0,0,6,0,0,0,0,4,0,0,0,2,0,7,0,0,0,5,0,0,0,4,0,0,0,0,3,0,6,0,0,0,5,0,0,0,0,2,0,7,0,0,0,4,0,0,0,0,3,0,8,0,0,0,5,0,0,0,0,4,0,0,6,0,0,0,3,0,0,0,7,0,0,5,0,0,0,0,4,0,0,0,2,0,6,0,0,0,5,0,0,0,3,0,8,0,0,0,0,6,0,0,0,4,0,0,0,2,0,7,0,0,0,5,0,0,0,4,0,0,0,3,0,6,0,0,0,0,5,0,0,0,2,0,7,0,0,0,4,0,0,0,3,0,8,0,0,0,5,0,0,0,0,4,0,6,0,0,0,3,0,0,0,7,0,0,5,0,0,0,0,4,0,0,2,0,0,6,0,0,0,5,0,0,3,0,0,8,0,0,0,0,6,0,0,4,0,0,0,0,2,0,7,0,0,0,5,0,0,0,4,0,0,0,3,0,6,0,0,0,0,5,0,0,2,0,0,7,0,0,0,4,0,0,0,3,0,8,0,0,0,5,0,0,0,4,0,0,6,0,0,0,3,0,0,7,0,0,0,5,0,0,0,0,4,0,0,2,0,6,0,0,0,0,5,0,3,0,0,8,0,0,0,6,0,0,0,4,0,0,0,2,0,7,0,0,0,5,0,0,0,4,0,0,3,0,0,6,0,0,0,5,0,0,2,0,7,0,0,0,4,0,0,0,3,0,8,0,0,0,5,0,0,4,0,0,0,3,0,6,0,0,0,7,0,0,5,0,0,0,2,0,0,0,0];
+        var solar_month_days=[31,28,31,30,31,30,31,31,30,31,30,31];var KOREAN_DAY_OF_WEEK=["일","월","화","수","목","금","토"];var celestial_stem=["갑","을","병","정","무","기","경","신","임","계"];var terrestrial_branch=["자","축","인","묘","진","사","오","미","신","유","술","해"];var zodiac=["쥐","소","호랑이","토끼","용","뱀","말","양","원숭이","닭","개","돼지"];var solar_term_data=[["입춘",14.3,2,4,10,31,48],["우수",14.3,2,19,1,41,20],["경칩",14.3,3,5,22,57,48],
+        ["춘분",14.3,3,21,0,1,40],["청명",14.3,4,5,5,48,24],["곡우",14.3,4,20,11,46,40],["입하",14.3,5,5,22,2,4],["소만",14.3,5,21,10,59,48],["망종",14.3,6,6,2,26,12],["하지",14.3,6,21,19,34,52],["소서",14.3,7,7,13,3,40],["대서",14.3,7,23,6,54,32],["입추",14.3,8,7,22,30,52],["처서",14.3,8,23,7,25,48],["백로",14.3,9,8,1,49,12],["추분",14.3,9,23,11,9,44],["한로",14.3,10,8,17,31,56],["상강",14.3,10,23,20,29,52],["입동",14.3,11,7,19,56,44],["소설",14.3,11,22,17,29,8],
+        ["대설",14.3,12,7,13,26,52],["동지",14.3,12,22,7,20,44]];function Manseryuk(e,t,r,a,s,n){if("boolean"==typeof a&&(n=a,a=12,s=!1),"boolean"==typeof s&&(n=s,s=!1),!e||e<1800||e>2100)throw new Error("올바르지 않은 년도입니다.");if(!t||t<1||t>12)throw new Error("올바르지 않은 월입니다.");if(!r||r<1||r>31)throw new Error("올바르지 않은 일입니다.");if(a<0||a>23)throw new Error("올바르지 않은 시입니다.");this.year=e,this.month=t,this.day=r,this.hour=a,this.is_leap_month=s,this.is_auto_leap=n,this.init()}Manseryuk.prototype.init=function(){var e,t,r;
+        this.is_auto_leap?(t=this.getSolarDate(this.year,this.month,this.day,this.is_leap_month),this.solar_year=t.year,this.solar_month=t.month,this.solar_day=t.day,this.lunar_year=this.year,this.lunar_month=this.month,this.lunar_day=this.day,this.is_leap_month=t.is_leap_month):t=this.getLunarDate(this.year,this.month,this.day),this.is_leap_month=t.is_leap_month,this.solar_year=this.year,this.solar_month=this.month,this.solar_day=this.day,this.lunar_year=t.year,this.lunar_month=t.month,this.lunar_day=t.day,e=new Date(this.solar_year,this.solar_month-1,this.solar_day),
+        this.korean_day_of_week=KOREAN_DAY_OF_WEEK[e.getDay()],this.year_celestial_stem_idx=(this.solar_year-4)%10,this.year_terrestrial_branch_idx=(this.solar_year-4)%12,this.zodiac=zodiac[this.year_terrestrial_branch_idx],r=this.getYearGanse(this.solar_year,this.solar_month,this.day),this.year_ganse=celestial_stem[r.gan]+terrestrial_branch[r.se],r=this.getMonthGanse(this.solar_year,this.solar_month,this.day),this.month_ganse=celestial_stem[r.gan]+terrestrial_branch[r.se],r=this.getDayGanse(this.solar_year,this.solar_month,this.day),
+        this.day_ganse=celestial_stem[r.gan]+terrestrial_branch[r.se],r=this.getHourGanse(r.gan,this.hour),this.hour_ganse=celestial_stem[r.gan]+terrestrial_branch[r.se]},Manseryuk.prototype.getYearGanse=function(e,t,r){var a;return a=t<solar_term_data[0][2]||t==solar_term_data[0][2]&&r<solar_term_data[0][3]?e-1:e,{gan:(a-4)%10,se:(a-4)%12}},Manseryuk.prototype.getMonthGanse=function(e,t,r){var a,s;a=t<solar_term_data[0][2]||t==solar_term_data[0][2]&&r<solar_term_data[0][3]?e-1:e,a=(a-4)%10;
+        var n=(a+1)*2%10;for(s=0;s<solar_term_data.length;s++)if(t==solar_term_data[s][2]&&r>=solar_term_data[s][3]||t==solar_term_data[(s+1)%solar_term_data.length][2]&&r<solar_term_data[(s+1)%solar_term_data.length][3])return{gan:(n+s)%10,se:(s+2)%12}},Manseryuk.prototype.getDayGanse=function(e,t,r){var a=(e-1)*365+Math.floor((e-1)/4)-Math.floor((e-1)/100)+Math.floor((e-1)/400);for(i=0;i<t-1;i++)a+=solar_month_days[i];t>2&&this.isSolarLeapYear(e)&&(a+=1),a+=r;return{gan:(a-1+10)%10,se:(a-1+12)%12}},Manseryuk.prototype.getHourGanse=
+        function(e,t){var r=Math.floor((t+1)/2)%12,a=(e%5*2+r)%10;return{gan:a,se:r}},Manseryuk.prototype.getDaewoon=function(e){for(var t=[],r="남"===e,a=this.getYearGanse(this.year,this.month,this.day).gan%2==0,s=this.getMonthGanse(this.year,this.month,this.day),n=this.getSolarTerm(),o=r^a?-1:1,h=0;h<10;h++){var i=s.gan+o*(h+1),l=s.se+o*(h+1);i<0&&(i+=10),l<0&&(l+=12);var c={};c.ganse=celestial_stem[i%10]+terrestrial_branch[l%12],c.daewoon_num=10*h+n,t.push(c)}return t},Manseryuk.prototype.getSolarTerm=function(){for(var e=new Date(this.solar_year,
+        this.solar_month-1,this.solar_day).getTime(),t=0;t<solar_term_data.length;t++){var r=this.getSolarTermDate(this.solar_year,solar_term_data[t][0]),a=r.getTime();if(a>=e)return Math.floor(Math.abs(a-e)/864e5/3)}},Manseryuk.prototype.getSolarTermDate=function(e,t){for(var r,a,s,n,o,h=0;h<solar_term_data.length;h++)if(solar_term_data[h][0]===t){r=solar_term_data[h],a=r[1],s=e/100*a,n=20.25+s,s=e%100,n+=s*r[2]/100,s=Math.floor(n),n=60*(n-s),o=Math.floor(n),n=60*(n-o);break}var i=new Date(e,r[3]-1,r[4],r[5],r[6]);
+        return i},Manseryuk.prototype.isSolarLeapYear=function(e){return e%4==0&&e%100!=0||e%400==0},Manseryuk.prototype.isHoliday=function(e,t){for(var r=0;r<kr_holidays.length;r++)if("양력"==kr_holidays[r].type){if(kr_holidays[r].month==e&&kr_holidays[r].day==t)return kr_holidays[r].name}else{var a=this.getLunarDate(this.year,e,t);if(kr_holidays[r].month==a.month&&kr_holidays[r].day==a.day){var s=kr_holidays[r].duration||1;for(g=0;g<s;g++){var n=this.getSolarDate(this.lunar_year,this.lunar_month,this.lunar_day-Math.floor(s/2)+g,this.is_leap_month);
+        if(n.year==this.solar_year&&n.month==this.solar_month&&n.day==this.solar_day)return kr_holidays[r].name}}}return!1},Manseryuk.prototype.getLunarDate=function(e,t,r){var a,s=e,n=t,o=r;if(this.isSolarLeapYear(e)&&t>2)for(day_buf=1,a=0;a<t-1;a++)day_buf+=solar_month_days[a];else for(day_buf=0,a=0;a<t-1;a++)day_buf+=solar_month_days[a];for(day_buf+=r,lunar_year_buf=1841;lunar_year_buf<e;lunar_year_buf++){var h=354;lunar_month_yoon[lunar_year_buf-1841]>0&&(h+=lunar_month_days[Math.floor(lunar_month_yoon[lunar_year_buf-1841]/2)][lunar_month_yoon[lunar_year_buf-
+        1841]%2-1]),day_buf+=h}for(var i=0;i<lunar_month_days.length;i++)for(var l=0;l<lunar_month_days[i].length;l++)day_buf-=lunar_month_days[i][l];return lunar_month_yoon[s-1841]>0&&n>=lunar_month_yoon[s-1841]&&n++,{year:s,month:n,day:o,is_leap_month:this.is_leap_month}},Manseryuk.prototype.getSolarDate=function(e,t,r,a){for(var s=0,n=1841;n<e;n++)if(s+=354,lunar_month_yoon[n-1841]>0)for(var o=0;o<12;o++)s+=lunar_month_days[Math.floor(lunar_month_yoon[n-1841]/2-1)][o];for(o=0;o<t-1;o++)s+=lunar_month_days[Math.floor(lunar_month_yoon[e-
+        1841]/2-1)][o];if(s+=r,lunar_month_yoon[e-1841]>0&&t>lunar_month_yoon[e-1841]||lunar_month_yoon[e-1841]>0&&t==lunar_month_yoon[e-1841]&&a)for(o=0;o<12;o++)s+=lunar_month_days[Math.floor(lunar_month_yoon[e-1841]/2-1)][o];var h=new Date(1841,0,30);h.setDate(h.getDate()+s);var i=h.getFullYear(),l=h.getMonth()+1,c=h.getDate();return{year:i,month:l,day:c}};
+
+        // 페이지가 열렸을 때 오늘 날짜로 기본값을 설정하는 함수
+        function setToday() {
+            const today = new Date();
+            document.getElementById('year').value = today.getFullYear();
+            document.getElementById('month').value = today.getMonth() + 1;
+            document.getElementById('day').value = today.getDate();
+            document.getElementById('hour').value = today.getHours();
+        }
+
+        // '사주 보기' 버튼을 누르면 실행되는 메인 함수
+        function calculateSaju() {
+            // 1. 사용자가 입력한 값을 가져옵니다.
+            const year = parseInt(document.getElementById('year').value);
+            const month = parseInt(document.getElementById('month').value);
+            const day = parseInt(document.getElementById('day').value);
+            const hour = parseInt(document.getElementById('hour').value);
+            const gender = document.getElementById('gender').value;
+            const isLunarOption = document.getElementById('isLunar').value;
+            
+            const isLunar = isLunarOption === 'true';
+            const isLeapMonth = isLunarOption === '윤달';
+
+            try {
+                // 2. 만세력 엔진을 작동시킵니다. (음력이면 isLunar=true)
+                const m = new Manseryuk(year, month, day, hour, isLeapMonth, isLunar);
+
+                // 3. 결과를 보기 좋게 정리합니다.
+                let output = `[기본 정보]\n`;
+                output += `- 양력 : ${m.solar_year}년 ${m.solar_month}월 ${m.solar_day}일 ${m.hour}시 (${m.korean_day_of_week}요일)\n`;
+                if(isLunar || isLeapMonth) {
+                    output += `- 음력 : ${m.lunar_year}년 ${isLeapMonth ? '윤' : ''}${m.lunar_month}월 ${m.lunar_day}일\n`;
+                }
+                output += `\n[사주팔자]\n`;
+                output += `  時   日   月   年\n`;
+                output += `  ${m.hour_ganse}  ${m.day_ganse}  ${m.month_ganse}  ${m.year_ganse}\n`;
+                output += ` (${terrestrial_branch[Math.floor((m.hour+1)/2)%12]}) (${zodiac[m.year_terrestrial_branch_idx]띠})\n`;
+
+
+                // 4. 대운 정보를 계산하고 추가합니다.
+                const daewoon = m.getDaewoon(gender);
+                output += `\n[대운]\n`;
+                output += `- 순행/역행: ${gender === '남' ? (m.getYearGanse(year,month,day).gan % 2 === 0 ? '순행' : '역행') : (m.getYearGanse(year,month,day).gan % 2 !== 0 ? '순행' : '역행')}\n`;
+                daewoon.forEach(d => {
+                    output += `- ${String(d.daewoon_num).padStart(2, ' ')}세: ${d.ganse}\n`;
+                });
+
+                // 5. 결과를 화면에 보여줍니다.
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerText = output;
+                resultDiv.style.display = 'block';
+
+            } catch (e) {
+                alert("계산 중 오류가 발생했습니다. 입력값을 확인해주세요.\n" + e.message);
+            }
+        }
+        // 페이지가 처음 열릴 때 오늘 날짜로 설정
+        setToday();
+    </script>
+</body>
+</html>
