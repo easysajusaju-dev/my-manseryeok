@@ -1,13 +1,13 @@
 name: keepalive
 on:
 schedule:
-- cron: "*/4 * * * *" # 4분마다
-workflow_dispatch: # 필요시 수동 실행도 가능
+- cron: '*/4 * * * *' # 4분마다
+workflow_dispatch: # 필요시 수동 실행
 jobs:
 ping:
 runs-on: ubuntu-latest
 steps:
 - name: Ping API
-run: curl -fsS -m 10 https://my-manseryeok.onrender.com/ping || true
+  run: curl -fsS -m 10 https://my-manseryeok.onrender.com/ping || true
 - name: Ping Proxy
-run: curl -fsS -m 10 https://saju-proxy.onrender.com/ping || true
+  run: curl -fsS -m 10 https://saju-proxy.onrender.com/ping || true
