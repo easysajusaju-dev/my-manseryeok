@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>만세력 조회</title>
+    <style>
+        :root{--bg:#fff;--fg:#111;--muted:#666;--line:#e5e7eb;--card:#f7f7f9}
+        *{box-sizing:border-box}
+        body{font-family:system-ui,Segoe UI,Apple SD Gothic Neo,Malgun Gothic,Arial;
+             background:var(--bg); color:var(--fg); max-width:920px; margin:32px auto; line-height:1.55; padding:0 16px}
+        h1{margin:0 0 16px}
+        .row{display:flex; gap:10px; flex-wrap:wrap; margin:6px 0}
+        .row > label{flex:1 1 140px}
+        label{display:block}
+        input[type="number"]{width:100%; padding:6px 8px}
+        fieldset{border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin:12px 0; background:var(--card)}
+        legend{color:var(--muted)}
+        button{padding:10px 16px; border:1px solid var(--line); border-radius:8px; background:#111; color:#fff; cursor:pointer}
+        button:disabled{opacity:.5; cursor:not-allowed}
+        table{border-collapse:collapse; width:100%; margin:12px 0}
+        th,td{border:1px solid var(--line); padding:8px; text-align:left}
+        th{background:#fafafa}
+        pre{background:#0b1220; color:#e6edf3; padding:12px; border-radius:8px; overflow:auto}
+        .note{color:var(--muted); font-size:.92rem}
+    </style>
+</head>
+<body>
+<h1>만세력 조회</h1>
+
+<div class="row">
+    <label>년
+        <input id="year" type="number" value="1973">
+    </label>
+    <label>월
+        <input id="month" type="number" min="1" max="12" value="5">
+    </label>
+    <label>일
+        <input id="day" type="number" min="1" max="31" value="13">
+    </label>
+    <label>시(0~23)
+        <input id="hour" type="number" min="0" max="23" value="14">
+    </label>
+    <label>분(0~59)
+        <input id="minute" type="number" min="0" max="59" value="0">
+    </label>
+</div>
+
+<fieldset>
+    <legend>달력/성별</legend>
+    <div class="row">
+        <label><input type="radio" name="calType" value="solar" checked> 양력</label>
+        <label><input type="radio" name="calType" value="lunar"> 음력</label>
+        <label><input type="checkbox" id="leap" disabled> 윤달</label>
+        <span style="flex:1"></span>
+        <label><input type="radio" name="sex" value="male" checked> 남</label>
+        <label><input type="radio" name="sex" value="female"> 여</label>
+    </div>
+</fieldset>
+
+<fieldset>
+    <legend>시주 경계</legend>
+    <div class="row">
+        <label><input type="radio" name="pivot" value="0"> 정시(0분 기준)</label>
+        <label><input type="radio" name="pivot" value="30" checked> 반시(30분 기준)</label>
+    </div>
+    <div class="note">예) 반시 기준이면 23:30부터 子시, 01:30부터 丑시…</div>
+</fieldset>
+
+<button id="btn">조회</button>
+
+<h3>간지</h3>
+<div id="ganzis">-</div>
+
+<h3>대운</h3>
+<table id="tblDae">
+    <thead><tr><th>대운</th><th>간지</th><th>시작년도</th></tr></thead>
+    <tbody></tbody>
+</table>
+
+<h3>세운(10년)</h3>
+<table id="tblSeun">
+    <thead><tr><th>년도</th><th>간지</th></tr></thead>
+    <tbody></tbody>
+</table>
+
+<h3>원본 JSON</h3>
+<pre id="raw">-</pre>
+
+<script>
+    const leapEl = document.getElementById('leap');
+    const calRadios = document.querySelectorAll('input[name=calType]');
+    calRadios.forEach(r => r.addEventListener('change', () => {
+      const isLunar = document.querySelector('input[name=calType]:checked').value === 'lunar';
+      leapEl.disabled = !isLunar;
+      if (!isLunar) leapEl.checked = false;
+    }));
+
+    function setGanzis(data){
+      document.getElementById('ganzis').textContent =
+        `연: ${data.yearGanji} / 월: ${data.monthGanji} / 일: ${data.dayGanji} / 시: ${data.hourGanji}`;
+    }
+    function fillTable(tbody, rows){
+      tbody.innerHTML = rows.map(r => `<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('');
+    }
+    function val(id, def=0){
+      const n = +document.getElementById(id).value;
+      return Number.isFinite(n) ? n : def;
+    }
+
+    async function fetchSaju() {
+      const y = val('year', 1973);
+      const m = val('month', 1);
+      const d = val('day', 1);
+      const h = val('hour', 0);
+      const minute = val('minute', 0);
+
+      const isLunar = document.querySelector('input[name=calType]:checked').value === 'lunar';
+      const isLeap = isLunar && leapEl.checked;
+      const isMale = document.querySelector('input[name=sex]:checked').value === 'male';
+      const pivotMin = +document.querySelector('input[name=pivot]:checked').value; // 0 or 30
+
+      const url = `/saju?year=${y}&month=${m}&day=${d}&hour=${h}&min=${minute}`+
+                  `&isLunar=${isLunar}&leap=${isLeap}&isMale=${isMale}&pivotMin=${pivotMin}`;
+
+      try{
+        const res = await fetch(url);
+        const text = await res.text();
+        let data;
+        try { data = JSON.parse(text); }
+        catch { document.getElementById('raw').textContent = '서버 응답: '+text; return; }
+
+        setGanzis(data);
+
+        const daeBody = document.querySelector('#tblDae tbody');
+        const daeRows = (data.daeWoon||[]).map((label,i)=>[
+          label, (data.daeWoonGanji||[])[i]||'', (data.daeWoonYear||[])[i]||''
+        ]);
+        fillTable(daeBody, daeRows);
+
+        const seunBody = document.querySelector('#tblSeun tbody');
+        const seunRows = (data.seunYear||[]).map((yy,i)=>[
+          yy, (data.seunGanji||[])[i]||''
+        ]);
+        fillTable(seunBody, seunRows);
+
+        document.getElementById('raw').textContent = JSON.stringify(data, null, 2);
+      }catch(err){
+        document.getElementById('raw').textContent = '에러: '+ (err?.message||String(err));
+      }
+    }
+
+    document.getElementById('btn').addEventListener('click', fetchSaju);
+    // Enter로도 조회
+    document.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter') fetchSaju();
+    });
+</script>
+</body>
+</html>
