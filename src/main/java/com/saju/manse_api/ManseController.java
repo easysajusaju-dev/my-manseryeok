@@ -11,8 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 @CrossOrigin(origins = {"https://easysajusaju-dev.github.io"}) // GitHub Pages에서 호출 허용
 public class ManseController {
 
-text
-
 @GetMapping("/ping")
 public String ping() { return "pong"; }
 
