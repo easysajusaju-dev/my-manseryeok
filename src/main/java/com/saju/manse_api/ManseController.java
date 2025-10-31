@@ -7,24 +7,26 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@CrossOrigin(origins = {"https://easysajusaju-dev.github.io"}) // 필요시 다른 도메인 추가 가능
 @RestController
+@CrossOrigin(origins = {"https://easysajusaju-dev.github.io"}) // GitHub Pages에서 호출 허용
 public class ManseController {
+
+text
 
 @GetMapping("/ping")
 public String ping() { return "pong"; }
 
 @GetMapping("/saju")
-public SajuResult getSaju(
+public SajuResult saju(
         @RequestParam int year,
         @RequestParam int month,
         @RequestParam int day,
         @RequestParam int hour,
-        @RequestParam(defaultValue = "0") int min,
-        @RequestParam(defaultValue = "false") boolean isLunar,
-        @RequestParam(defaultValue = "false") boolean leap,
-        @RequestParam(defaultValue = "true") boolean isMale,
-        @RequestParam(defaultValue = "30") int pivotMin
+        @RequestParam(name = "min", defaultValue = "0") int min,
+        @RequestParam(name = "isLunar", defaultValue = "false") boolean isLunar,
+        @RequestParam(name = "leap", defaultValue = "false") boolean leap,
+        @RequestParam(name = "isMale", defaultValue = "true") boolean isMale,
+        @RequestParam(name = "pivotMin", defaultValue = "30") int pivotMin
 ) {
     return SajuService.INSTANCE.getSaju(year, month, day, hour, min, isLunar, leap, isMale, pivotMin);
 }
