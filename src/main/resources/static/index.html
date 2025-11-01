@@ -3,12 +3,11 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
-<title>만세력 조회(모바일 고정 · 10칸 캐러셀)</title>
+<title>만세력 조회(모바일 고정 · 대운/연운/월운)</title>
 <style>
   :root{
     --frame: 420px;             /* 스마트폰 고정폭 */
     --gap: 8px;
-    --tile-gap: 8px;
     --line:#e5e7eb; --muted:#6b7280; --bg:#f4f5f7; --card:#ffffff;
     --wood:#22c55e;  /* 목 */
     --fire:#ef4444;  /* 화 */
@@ -46,25 +45,23 @@
 
   /* 캐러셀(10칸) */
   .carousel{position:relative}
-  .viewport{width:100%; overflow-x:auto; display:flex; gap:var(--tile-gap);
+  .viewport{width:100%; overflow-x:auto; display:flex; gap:8px;
             scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; padding-bottom:6px}
   .viewport::-webkit-scrollbar{height:8px}
   .viewport::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:999px}
-  .tile{flex:0 0 auto; width:36px; /* JS에서 10칸 맞게 자동 보정됨 */
+  .tile{flex:0 0 auto; width:36px;  /* JS에서 10칸 맞게 자동 보정 */
         border:1px solid var(--line);border-radius:10px;background:#fff;padding:6px;text-align:center;scroll-snap-align:center}
-  .yr{font-weight:700;margin-bottom:4px}
+  .yr{font-size:13px;font-weight:700;margin-bottom:4px}
   .gbox{display:flex;flex-direction:column;gap:4px}
-  .mini{display:flex;align-items:center;justify-content:center;height:34px;border-radius:8px;border:2px solid #111;font-weight:800}
-  .mini.small{height:30px;border:2px solid #444}
+  .mini{display:flex;align-items:center;justify-content:center;height:34px;border-radius:8px;border:2px solid #111;font-weight:800;font-size:20px}
+  .mini.small{height:30px;border:2px solid #444;font-size:18px}
+  .subnote{margin-top:4px;font-size:12px;color:#374151}
   .on{outline:3px solid #2563eb}
   .nav{position:absolute;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;border:0;background:#0009;color:#fff;display:flex;align-items:center;justify-content:center}
   .nav.prev{left:-6px} .nav.next{right:-6px}
   .nav:disabled{opacity:.3}
+
   pre{background:#0b1220;color:#e6edf3;padding:12px;border-radius:8px;overflow:auto}
-/* 연주/월주 전체 숨김 */
-#car-year, #yearRow,
-#car-month, #monthRow { display: none !important; }
-  
 </style>
 </head>
 <body>
@@ -129,9 +126,12 @@
     </div>
   </fieldset>
 
-  <!-- 캐러셀 4개: 화면 폭은 고정, 내부만 10칸씩 표시 -->
+  <!-- 대운 -->
   <fieldset>
     <legend>대운(가로 · 10칸)</legend>
+    <div id="daeHeader" class="note" style="margin:6px 0 8px 2px;font-weight:700">
+      대운수 : -(-)
+    </div>
     <div id="car-dae" class="carousel" data-visible="10">
       <button class="nav prev" aria-label="이전">‹</button>
       <div id="daeRow" class="viewport"></div>
@@ -139,26 +139,22 @@
     </div>
   </fieldset>
 
+  <!-- 연운(세운) -->
   <fieldset>
-    <legend>세운(가로 · 10칸)</legend>
-    <div id="car-seun" class="carousel" data-visible="10">
+    <legend>연운(가로 · 10칸)</legend>
+    <div id="runHeader" class="note" style="margin:6px 0 8px 2px;font-weight:700">
+      연운 : 10개 창 (가운데 현재년도)
+    </div>
+    <div id="car-run" class="carousel" data-visible="10">
       <button class="nav prev" aria-label="이전">‹</button>
-      <div id="seunRow" class="viewport"></div>
+      <div id="runRow" class="viewport"></div>
       <button class="nav next" aria-label="다음">›</button>
     </div>
   </fieldset>
 
+  <!-- 월운 -->
   <fieldset>
-    <legend>연주(가로 · 1975~출생+120 · 10칸)</legend>
-    <div id="car-year" class="carousel" data-visible="10">
-      <button class="nav prev" aria-label="이전">‹</button>
-      <div id="yearRow" class="viewport"></div>
-      <button class="nav next" aria-label="다음">›</button>
-    </div>
-  </fieldset>
-
-  <fieldset>
-    <legend>월주(선택 연도 1~12월 · 10칸)</legend>
+    <legend>월운(선택 연도 1~12월 · 10칸)</legend>
     <div id="car-month" class="carousel" data-visible="10">
       <button class="nav prev" aria-label="이전">‹</button>
       <div id="monthRow" class="viewport"></div>
@@ -173,15 +169,39 @@
 </main>
 
 <script>
-  // ===== 공통 =====
+  /* ===== 데이터/오행/십신 ===== */
   const STEM_ELEM={'甲':'wood','乙':'wood','丙':'fire','丁':'fire','戊':'earth','己':'earth','庚':'metal','辛':'metal','壬':'water','癸':'water'};
   const BRANCH_ELEM={'子':'water','丑':'earth','寅':'wood','卯':'wood','辰':'earth','巳':'fire','午':'fire','未':'earth','申':'metal','酉':'metal','戌':'earth','亥':'water'};
+  const CYCLE=['wood','fire','earth','metal','water'];
+  const CONTROL={wood:'earth', fire:'metal', earth:'water', metal:'wood', water:'fire'};
+  const YANG='甲丙戊庚壬';
   function elemOf(c){return STEM_ELEM[c]||BRANCH_ELEM[c]||'earth';}
   function split(g){return[g?.[0]||'-',g?.[1]||'-'];}
   function setText(id,t){document.getElementById(id).textContent=t;}
   function iv(id){const n=+document.getElementById(id).value;return Number.isFinite(n)?n:0;}
   function PROXY(){return document.getElementById('proxy').value.trim()||'https://saju-proxy.onrender.com';}
+  const nowYear=(new Date()).getFullYear();
 
+  function isYang(stem){return YANG.includes(stem);}
+  function tenGod(dayStem, otherStem){
+    if(!dayStem||!otherStem) return '-';
+    const ed=elemOf(dayStem), eo=elemOf(otherStem);
+    const same=isYang(dayStem)===isYang(otherStem);
+    const idx=k=>CYCLE.indexOf(k);
+    if(eo===ed) return same?'비견':'겁재';
+    if(eo===CYCLE[(idx(ed)+1)%5]) return same?'식신':'상관';
+    if(eo===CYCLE[(idx(ed)+4)%5]) return same?'정인':'편인';
+    if(eo===CONTROL[ed])          return same?'정재':'편재';
+    if(CONTROL[eo]===ed)          return same?'정관':'편관';
+    return '-';
+  }
+  function yearGanjiOf(y){
+    const GAN=['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+    const JI =['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+    return GAN[(y+6)%10]+JI[(y+8)%12];
+  }
+
+  /* 입력 보조 */
   document.querySelectorAll('input[name=cal]').forEach(r=>{
     r.addEventListener('change',()=>{
       const isLunar=document.querySelector('input[name=cal]:checked').value==='lunar';
@@ -189,6 +209,7 @@
     });
   });
 
+  /* 4주 박스 색칠 */
   function setBox(id,ch){
     const el=document.getElementById(id);
     el.textContent=ch||'-';
@@ -196,7 +217,7 @@
     el.classList.add(elemOf(ch));
   }
 
-  // API 호출(음력 실패 시 윤달 토글)
+  /* API 호출(음력 실패 시 윤달 토글) */
   async function fetchSaju(q){
     let r=await fetch(PROXY()+'/proxy/saju?'+new URLSearchParams(q),{cache:'no-store'});
     if(q.isLunar==='true' && !r.ok){
@@ -207,64 +228,111 @@
     return r.json();
   }
 
-  // 10칸 맞추는 레이아웃(타일 폭 자동 계산)
+  /* 10칸 맞춤(타일 폭 자동 계산) */
   function fitTen(viewport){
     const visible = parseInt(viewport.closest('.carousel').dataset.visible || '10',10);
-    const gap = parseFloat(getComputedStyle(viewport).columnGap || getComputedStyle(viewport).gap || '8');
-    const ww = viewport.clientWidth;  // phone 폭
+    const gap = 8;                                           // CSS gap과 동일
+    const ww = viewport.clientWidth;
     const w = Math.floor((ww - gap*(visible-1)) / visible);
-    viewport.querySelectorAll('.tile').forEach(t=>{ t.style.width = Math.max(34, w) + 'px'; });
+    viewport.querySelectorAll('.tile').forEach(t=>{ t.style.width = Math.max(36,w)+'px'; });
   }
 
-  // 캐러셀 버튼 스크롤(10칸씩 이동)
-  function initCarousel(carId){
+  /* 캐러셀 버튼(뷰포트 폭 만큼 스크롤) */
+  function initCarouselScroll(carId){
     const car=document.getElementById(carId);
+    if(!car) return;
     const vp=car.querySelector('.viewport');
     const prev=car.querySelector('.prev');
     const next=car.querySelector('.next');
     const onResize=()=>fitTen(vp);
     window.addEventListener('resize', onResize);
-    prev.addEventListener('click',()=>vp.scrollBy({left:-vp.clientWidth,behavior:'smooth'}));
-    next.addEventListener('click',()=>vp.scrollBy({left: vp.clientWidth,behavior:'smooth'}));
-    // 최초 1회 폭 맞추기
+    prev.onclick = ()=>vp.scrollBy({left:-vp.clientWidth,behavior:'smooth'});
+    next.onclick = ()=>vp.scrollBy({left: vp.clientWidth,behavior:'smooth'});
     setTimeout(onResize,0);
   }
 
-  // 라인 렌더(대운/세운)
-  function renderLine(years,ganjis,labels,viewId){
-    const vp=document.getElementById(viewId); vp.innerHTML='';
-    const now=(new Date()).getFullYear();
-    (labels||years||[]).forEach((label,i)=>{
-      const gj=(ganjis||[])[i]||''; const yy=(years||[])[i]||'';
-      const [s,b]=split(gj);
-      const tile=document.createElement('div'); tile.className='tile'+(yy===now?' on':'');
-      tile.innerHTML=`<div class="yr">${label||yy}</div>
-        <div class="gbox"><div class="mini ${elemOf(s)}">${s||'-'}</div>
-        <div class="mini small ${elemOf(b)}">${b||'-'}</div></div>`;
-      vp.appendChild(tile);
-      if(yy===now) setTimeout(()=>tile.scrollIntoView({inline:'center',behavior:'smooth'}),20);
-    });
-    fitTen(vp);
-  }
+  /* ───────── 대운(샘플 스타일) ───────── */
+  function renderDaeRowLikeSample(data, dayStem, birthYear){
+    const vp = document.getElementById('daeRow');
+    const header = document.getElementById('daeHeader');
+    vp.innerHTML = '';
 
-  // 연주(1975~출생+120)
-  function renderYears(start,end,highlight){
-    const vp=document.getElementById('yearRow'); vp.innerHTML='';
-    for(let y=start;y<=end;y++){
-      const s=['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'][(y+6)%10];
-      const b=['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'][(y+8)%12];
-      const tile=document.createElement('div'); tile.className='tile'+(y===highlight?' on':''); tile.dataset.year=y;
-      tile.innerHTML=`<div class="yr">${y}</div>
-        <div class="gbox"><div class="mini ${elemOf(s)}">${s}</div>
-        <div class="mini small ${elemOf(b)}">${b}</div></div>`;
-      tile.addEventListener('click',()=>loadMonths(y));
+    // 첫 대운 나이(대운수)
+    const firstYear = (data.daeWoonYear||[])[0] || birthYear;
+    const startAge = Math.max(1, firstYear - birthYear + 1);
+
+    // 방향
+    const dirText = (data.daeWoon||[])[0] || '';
+    const isForward = dirText.includes('순행');
+    const dirLabel = isForward ? '정사' : '역사';
+
+    header.textContent = `대운수 : ${startAge}(${dirLabel})`;
+
+    // 2,12,22,…,92 (100세 이하)
+    const ages = [];
+    for(let a=startAge; a<=100; a+=10) ages.push(a);
+
+    const gjList = data.daeWoonGanji || [];
+    for(let i=0;i<ages.length && i<gjList.length;i++){
+      const age = ages[i];
+      const gj = gjList[i] || '';
+      const [s,b] = split(gj);
+      const tg = tenGod(dayStem, s);
+
+      const tile = document.createElement('div');
+      tile.className = 'tile' + ((data.daeWoonYear?.[i]===nowYear)?' on':'');
+      tile.innerHTML = `
+        <div class="yr">${age}</div>
+        <div class="gbox">
+          <div class="mini ${elemOf(s)}">${s||'-'}</div>
+          <div class="mini small ${elemOf(b)}">${b||'-'}</div>
+        </div>
+        <div class="subnote">${tg}</div>
+      `;
       vp.appendChild(tile);
-      if(y===highlight) setTimeout(()=>tile.scrollIntoView({inline:'center',behavior:'smooth'}),20);
     }
     fitTen(vp);
   }
 
-  // 월주(선택 연도 1~12월, 각 15일 12:00)
+  /* ───────── 연운(10칸, 가운데 현재년도, 1년 단위 이동) ───────── */
+  let runCenterYear = nowYear;
+  const RUN_VISIBLE = 10;
+
+  function renderRunRow(centerYear){
+    const vp = document.getElementById('runRow');
+    const hdr = document.getElementById('runHeader');
+    vp.innerHTML = '';
+
+    const half = Math.floor(RUN_VISIBLE/2); // 5
+    const start = centerYear - half;
+    const end   = start + RUN_VISIBLE - 1;
+
+    for(let y=start; y<=end; y++){
+      const g = yearGanjiOf(y);
+      const [s,b] = [g[0],g[1]];
+      const tile = document.createElement('div');
+      tile.className = 'tile' + (y===centerYear?' on':'');
+      tile.innerHTML = `
+        <div class="yr">${y}</div>
+        <div class="gbox">
+          <div class="mini ${elemOf(s)}">${s}</div>
+          <div class="mini small ${elemOf(b)}">${b}</div>
+        </div>
+      `;
+      tile.onclick = ()=>{ runCenterYear = y; renderRunRow(runCenterYear); loadMonths(y); };
+      vp.appendChild(tile);
+    }
+    hdr.textContent = `연운 : ${start} ~ ${end} (가운데 ${centerYear})`;
+
+    // 버튼: 1년씩 이동
+    const car = document.getElementById('car-run');
+    car.querySelector('.prev').onclick = ()=>{ runCenterYear -= 1; renderRunRow(runCenterYear); };
+    car.querySelector('.next').onclick = ()=>{ runCenterYear += 1; renderRunRow(runCenterYear); };
+
+    fitTen(vp);
+  }
+
+  /* ───────── 월운(선택 연도 1~12월, 10칸) ───────── */
   async function loadMonths(year){
     const vp=document.getElementById('monthRow'); vp.innerHTML='';
     const male=document.querySelector('input[name=sex]:checked').value==='male';
@@ -280,15 +348,19 @@
         const [s,b]=split(gj);
         const tile=document.createElement('div'); tile.className='tile';
         tile.innerHTML=`<div class="yr">${m}월</div>
-          <div class="gbox"><div class="mini ${elemOf(s)}">${s||'-'}</div>
-          <div class="mini small ${elemOf(b)}">${b||'-'}</div></div>`;
+          <div class="gbox">
+            <div class="mini ${elemOf(s)}">${s||'-'}</div>
+            <div class="mini small ${elemOf(b)}">${b||'-'}</div>
+          </div>`;
         vp.appendChild(tile);
       });
       fitTen(vp);
-    }catch(e){ vp.innerHTML='<span class="note">월주 불러오기 실패: '+(e?.message||e)+'</span>'; }
+    }catch(e){
+      vp.innerHTML='<span class="note">월운 불러오기 실패: '+(e?.message||e)+'</span>';
+    }
   }
 
-  // 조회
+  /* 조회 */
   document.getElementById('go').addEventListener('click', async ()=>{
     const msg=document.getElementById('msg'); msg.textContent='조회 중...';
     const y=iv('yy'), m=iv('mm'), d=iv('dd'), h=iv('hh'), mi=iv('mi');
@@ -304,27 +376,31 @@
       });
       document.getElementById('raw').textContent=JSON.stringify(data,null,2);
 
-      // 요약(서버가 내려주면 사용, 없으면 요청값/기본)
+      /* 요약 */
       setText('solarText', data.solarText || `${y}년 ${String(m).padStart(2,'0')}월 ${String(d).padStart(2,'0')}일 ${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`);
-      setText('lunarText', data.lunarText || (isLunar? `음력 ${m}월 ${d}일 ${leap?'(윤달)':''}` : '-'));
+      setText('lunarText', data.lunarText || (isLunar? `음력 ${m}월 ${d}일 ${leap?'(윤달)':''}`:'-'));
       setText('termText',  data.termName ? `${data.termName} ${data.termDate||''}` : '-');
       setText('stdText',   `pivot ${pivotMin}분`);
 
-      // 4주(정사각형 고정)
+      /* 4주 */
       const [ys,yb]=split(data.yearGanji), [ms,mb]=split(data.monthGanji), [ds,db]=split(data.dayGanji), [hs,hb]=split(data.hourGanji);
       setBox('yStem',ys); setBox('yBranch',yb);
       setBox('mStem',ms); setBox('mBranch',mb);
       setBox('dStem',ds); setBox('dBranch',db);
       setBox('hStem',hs); setBox('hBranch',hb);
 
-      // 캐러셀들 렌더 + 10칸 맞추기
-      renderLine(data.daeWoonYear,data.daeWoonGanji,data.daeWoon,'daeRow');
-      renderLine(data.seunYear,data.seunGanji,null,'seunRow');
-      renderYears(1975, y+120, (new Date()).getFullYear());
-      loadMonths((new Date()).getFullYear());
+      /* 대운(샘플 스타일) */
+      renderDaeRowLikeSample(data, ds, y);
+      initCarouselScroll('car-dae');
 
-      // 캐러셀 버튼 초기화(한 번만)
-      ['car-dae','car-seun','car-year','car-month'].forEach(id=>initCarousel(id));
+      /* 연운(10칸 윈도우, 가운데 올해) + 월운 */
+      runCenterYear = nowYear;
+      renderRunRow(runCenterYear);
+      loadMonths(runCenterYear);
+
+      /* 월운 캐러셀 스크롤 버튼만 초기화 */
+      initCarouselScroll('car-month');
+
       msg.textContent='완료';
     }catch(e){
       msg.textContent='오류: '+(e?.message||String(e));
