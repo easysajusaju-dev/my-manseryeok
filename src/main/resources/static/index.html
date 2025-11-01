@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>만세력 조회(오행 색상·가로 스크롤)</title>
+<style>
+  :root{
+    --line:#e5e7eb; --muted:#6b7280; --bg:#f7f7f9; --card:#ffffff;
+    --wood:#22c55e;    /* 목: 초록 */
+    --fire:#ef4444;    /* 화: 빨강 */
+    --earth:#f59e0b;   /* 토: 노랑/주황 */
+    --metal:#9ca3af;   /* 금: 회색 */
+    --water:#60a5fa;   /* 수: 하늘색 (요청 반영) */
+  }
+  *{box-sizing:border-box}
+  body{font-family:system-ui,Segoe UI,Malgun Gothic,Apple SD Gothic Neo,Arial;margin:0;background:#f0f2f5;color:#111}
+  header{background:#1f2937;color:#fff;padding:14px 18px}
+  header h1{margin:0;font-size:18px}
+  main{max-width:1120px;margin:18px auto;padding:0 14px}
+  fieldset{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:12px 14px;margin:12px 0}
+  legend{font-weight:700;color:#111;padding:0 6px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0}
+  .row>label{flex:1 1 140px}
+  input[type=number],input[type=text]{width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+  button{padding:10px 16px;border:0;border-radius:8px;background:#111;color:#fff;cursor:pointer}
+  .note{color:var(--muted);font-size:.92rem}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:980px){.two{grid-template-columns:1fr}}
+
+  /* 4주 박스 */
+  .ganzigrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:8px}
+  .col{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .cap{font-size:.95rem;color:#374151}
+  .box{width:100%;border-radius:14px;display:flex;align-items:center;justify-content:center;
+       height:96px;font-size:44px;font-weight:900;color:#111;border:2px solid #111}
+  .box.small{height:78px;font-size:34px;border:2px solid #444;margin-top:8px}
+
+  /* 오행 색상 */
+  .wood{background:var(--wood)}
+  .fire{background:var(--fire);color:#fff}
+  .earth{background:var(--earth)}
+  .metal{background:var(--metal)}
+  .water{background:var(--water);color:#fff}
+
+  /* 칩/태그 */
+  .tags{display:flex;gap:8px;flex-wrap:wrap}
+  .tag{display:inline-block;padding:6px 12px;border-radius:999px;background:#fff;border:1px solid var(--line)}
+  .pill{padding:6px 10px;border-radius:999px;font-size:.92rem;background:#fff;border:1px solid var(--line);margin-right:6px}
+
+  /* 가로 스크롤 바 */
+  .hscroll{display:flex;gap:8px;overflow-x:auto;scroll-snap-type:x proximity;padding-bottom:8px}
+  .hscroll::-webkit-scrollbar{height:8px}
+  .hscroll::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:999px}
+  .tile{flex:0 0 auto;min-width:72px;border:1px solid var(--line);border-radius:10px;background:#fff;padding:6px 8px;text-align:center}
+  .yr{font-weight:700}
+  .gbox{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+  .mini{display:flex;align-items:center;justify-content:center;height:38px;border-radius:8px;border:2px solid #111;font-weight:800}
+  .mini.small{height:32px;border:2px solid #444}
+  .on{outline:3px solid #2563eb}
+
+  table{border-collapse:collapse;width:100%;margin-top:8px}
+  th,td{border:1px solid var(--line);padding:8px;text-align:left}
+  th{background:#f3f4f6}
+  pre{background:#0b1220;color:#e6edf3;padding:12px;border-radius:8px;overflow:auto}
+</style>
+</head>
+<body>
+<header><h1>만세력 조회(오행 색상·가로 스크롤)</h1></header>
+
+<main class="two">
+  <!-- 입력 -->
+  <section>
+    <fieldset>
+      <legend>입력</legend>
+      <div class="row">
+        <label>년 <input id="yy" type="number" value="1973"></label>
+        <label>월 <input id="mm" type="number" min="1" max="12" value="5"></label>
+        <label>일 <input id="dd" type="number" min="1" max="31" value="13"></label>
+      </div>
+      <div class="row">
+        <label>시(0~23) <input id="hh" type="number" min="0" max="23" value="14"></label>
+        <label>분(0~59) <input id="mi" type="number" min="0" max="59" value="0"></label>
+      </div>
+      <div class="row">
+        <label><input type="radio" name="cal" value="solar" checked> 양력</label>
+        <label><input type="radio" name="cal" value="lunar"> 음력</label>
+        <label><input id="leap" type="checkbox" disabled> 윤달</label>
+        <span style="flex:1"></span>
+        <label><input type="radio" name="sex" value="male" checked> 남</label>
+        <label><input type="radio" name="sex" value="female"> 여</label>
+      </div>
+      <div class="row">
+        <label><input type="radio" name="pivot" value="0"> 정시(0분)</label>
+        <label><input type="radio" name="pivot" value="30" checked> 반시(30분)</label>
+      </div>
+      <div class="row">
+        <label style="flex:1 1 100%;">프록시 주소
+          <input id="proxy" type="text" value="https://saju-proxy.onrender.com">
+        </label>
+      </div>
+      <div class="row">
+        <button id="go">만세력 조회</button>
+        <span id="msg" class="note">첫 호출은 15~30초 걸릴 수 있어요.</span>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>대운(가로 스크롤)</legend>
+      <div id="daeRow" class="hscroll"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>세운(가로 스크롤)</legend>
+      <div id="seunRow" class="hscroll"></div>
+    </fieldset>
+
+    <details>
+      <summary>원본 JSON</summary>
+      <pre id="raw">-</pre>
+    </details>
+  </section>
+
+  <!-- 출력 -->
+  <section>
+    <fieldset>
+      <legend>요약</legend>
+      <div class="tags">
+        <span class="tag">양력</span><span id="solarText" class="tag">-</span>
+        <span class="tag">음력</span><span id="lunarText" class="tag">-</span>
+        <span class="tag">절기</span><span id="termText" class="tag">-</span>
+        <span class="tag">기준</span><span id="stdText" class="tag">-</span>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>4주(오행 색상)</legend>
+      <div class="ganzigrid">
+        <div class="col">
+          <div class="cap">년</div>
+          <div id="yStem"   class="box">-</div>
+          <div id="yBranch" class="box small">-</div>
+        </div>
+        <div class="col">
+          <div class="cap">월</div>
+          <div id="mStem"   class="box">-</div>
+          <div id="mBranch" class="box small">-</div>
+        </div>
+        <div class="col">
+          <div class="cap">일</div>
+          <div id="dStem"   class="box">-</div>
+          <div id="dBranch" class="box small">-</div>
+        </div>
+        <div class="col">
+          <div class="cap">시</div>
+          <div id="hStem"   class="box">-</div>
+          <div id="hBranch" class="box small">-</div>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>연주(가로·1975년~출생+120)</legend>
+      <div id="yearRow" class="hscroll"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>월주(선택 연도 1~12월)</legend>
+      <div id="monthRow" class="hscroll"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>오행 카운트</legend>
+      <div id="elemCount" class="tags"></div>
+    </fieldset>
+  </section>
+</main>
+
+<script>
+  // ==== 설정 ====
+  function getPROXY(){ return document.getElementById('proxy').value.trim() || 'https://saju-proxy.onrender.com'; }
+  const GAN = ['甲','乙','丙','丁','戊','己','庚','辛','壬','癸'];
+  const JI  = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+  const STEM_ELEM  = { '甲':'wood','乙':'wood','丙':'fire','丁':'fire','戊':'earth','己':'earth','庚':'metal','辛':'metal','壬':'water','癸':'water' };
+  const BRANCH_ELEM= { '子':'water','丑':'earth','寅':'wood','卯':'wood','辰':'earth','巳':'fire','午':'fire','未':'earth','申':'metal','酉':'metal','戌':'earth','亥':'water' };
+  const ELEM_KO = {wood:'목',fire:'화',earth:'토',metal:'금',water:'수'};
+
+  // 음력 선택 시 윤달 활성화
+  document.querySelectorAll('input[name=cal]').forEach(r=>{
+    r.addEventListener('change', ()=>{
+      const isLunar = document.querySelector('input[name=cal]:checked').value==='lunar';
+      const leap = document.getElementById('leap');
+      leap.disabled = !isLunar;
+      if(!isLunar) leap.checked = false;
+    });
+  });
+
+  function splitGanji(g){ return [g?.[0]||'-', g?.[1]||'-']; }
+  function elemOf(ch){ return STEM_ELEM[ch] || BRANCH_ELEM[ch] || 'earth'; }
+  function setBox(id, text){
+    const el = document.getElementById(id);
+    el.textContent = text || '-';
+    el.className = el.className.replace(/\b(wood|fire|earth|metal|water)\b/g,'').trim();
+    el.classList.add(elemOf(text));
+  }
+  function setText(id,t){ document.getElementById(id).textContent = t; }
+  function iv(id){ const n=+document.getElementById(id).value; return Number.isFinite(n)?n:0; }
+
+  // 연주(연도→간지)
+  function yearGanjiOf(y){ return GAN[(y+6)%10] + JI[(y+8)%12]; }
+
+  // API 호출
+  async function fetchSaju(q){
+    const PROXY=getPROXY();
+    const base=PROXY+'/proxy/saju?'+new URLSearchParams(q).toString();
+    let r=await fetch(base,{cache:'no-store'});
+    if(q.isLunar==='true' && !r.ok){ // 음력 실패 시 윤달 토글
+      const q2={...q, leap:(q.leap==='true'?'false':'true')};
+      r=await fetch(PROXY+'/proxy/saju?'+new URLSearchParams(q2),{cache:'no-store'});
+    }
+    if(!r.ok) throw new Error(await r.text());
+    return r.json();
+  }
+
+  // 연주 타임라인
+  function renderYearRow(start,end,highlightYear){
+    const row=document.getElementById('yearRow'); row.innerHTML='';
+    for(let y=start;y<=end;y++){
+      const g=yearGanjiOf(y); const [s,b]=[g[0],g[1]];
+      const tile=document.createElement('div'); tile.className='tile'+(y===highlightYear?' on':'');
+      tile.innerHTML = `<div class="yr">${y}</div>
+        <div class="gbox">
+          <div class="mini ${elemOf(s)}">${s}</div>
+          <div class="mini small ${elemOf(b)}">${b}</div>
+        </div>`;
+      tile.dataset.year=y;
+      tile.title=`${y}년 ${g}`;
+      tile.addEventListener('click', ()=>loadMonthRow(y)); // 연도 클릭 시 월주 로드
+      row.appendChild(tile);
+      if(y===highlightYear) setTimeout(()=>tile.scrollIntoView({inline:'center',behavior:'smooth'}),0);
+    }
+  }
+
+  // 월주 타임라인(선택 연도) : 각 월 15일 12:00 기준으로 월주만 가져옴
+  async function loadMonthRow(year){
+    const row=document.getElementById('monthRow'); row.innerHTML='';
+    const sex = document.querySelector('input[name=sex]:checked').value==='male';
+    const pivot = +document.querySelector('input[name=pivot]:checked').value;
+    // 월주: 양력 기준으로 1~12월 15일 12:00로 호출
+    const calls=[...Array(12)].map((_,i)=>{
+      const m=i+1;
+      const q={year,month:m,day:15,hour:12,min:0,isMale:String(sex),isLunar:'false',leap:'false',pivotMin:String(pivot)};
+      return fetchSaju(q).then(d=>({m,ganji:d.monthGanji}));
+    });
+    try{
+      const list=await Promise.all(calls);
+      list.forEach(({m,ganji})=>{
+        const [s,b]=splitGanji(ganji);
+        const tile=document.createElement('div'); tile.className='tile';
+        tile.innerHTML=`<div class="yr">${m}월</div>
+          <div class="gbox">
+            <div class="mini ${elemOf(s)}">${s}</div>
+            <div class="mini small ${elemOf(b)}">${b}</div>
+          </div>`;
+        row.appendChild(tile);
+      });
+    }catch(e){
+      row.innerHTML='<span class="note">월주 불러오기 실패: '+(e?.message||e)+'</span>';
+    }
+  }
+
+  // 대운/세운 가로
+  function renderDaeSeun(data){
+    const now=(new Date()).getFullYear();
+
+    const dae=document.getElementById('daeRow'); dae.innerHTML='';
+    (data.daeWoon||[]).forEach((label,i)=>{
+      const gj=(data.daeWoonGanji||[])[i]||''; const yy=(data.daeWoonYear||[])[i]||'';
+      const [s,b]=splitGanji(gj);
+      const tile=document.createElement('div'); tile.className='tile'+(yy===now?' on':'');
+      tile.innerHTML=`<div class="yr">${label}</div>
+        <div class="gbox">
+          <div class="mini ${elemOf(s)}">${s||'-'}</div>
+          <div class="mini small ${elemOf(b)}">${b||'-'}</div>
+        </div>
+        <div class="note" style="text-align:center">${yy||''}</div>`;
+      dae.appendChild(tile);
+      if(yy===now) setTimeout(()=>tile.scrollIntoView({inline:'center',behavior:'smooth'}),0);
+    });
+
+    const seun=document.getElementById('seunRow'); seun.innerHTML='';
+    (data.seunYear||[]).forEach((yy,i)=>{
+      const gj=(data.seunGanji||[])[i]||''; const [s,b]=splitGanji(gj);
+      const tile=document.createElement('div'); tile.className='tile'+(yy===now?' on':'');
+      tile.innerHTML=`<div class="yr">${yy}</div>
+        <div class="gbox">
+          <div class="mini ${elemOf(s)}">${s||'-'}</div>
+          <div class="mini small ${elemOf(b)}">${b||'-'}</div>
+        </div>`;
+      seun.appendChild(tile);
+      if(yy===now) setTimeout(()=>tile.scrollIntoView({inline:'center',behavior:'smooth'}),0);
+    });
+  }
+
+  // 오행 카운트
+  function renderElemCount(chars){
+    const cnt={wood:0,fire:0,earth:0,metal:0,water:0};
+    chars.forEach(c=>cnt[elemOf(c)]++);
+    const box=document.getElementById('elemCount'); box.innerHTML='';
+    ['wood','fire','earth','metal','water'].forEach(k=>{
+      const span=document.createElement('span'); span.className='pill';
+      span.textContent=`${ELEM_KO[k]}(${cnt[k]})`;
+      box.appendChild(span);
+    });
+  }
+
+  document.getElementById('go').addEventListener('click', async ()=>{
+    const msg=document.getElementById('msg'); msg.textContent='조회 중...';
+    const y=iv('yy'), m=iv('mm'), d=iv('dd'), h=iv('hh'), mi=iv('mi');
+    const isLunar=document.querySelector('input[name=cal]:checked').value==='lunar';
+    const leap=isLunar && document.getElementById('leap').checked;
+    const isMale=document.querySelector('input[name=sex]:checked').value==='male';
+    const pivotMin=+document.querySelector('input[name=pivot]:checked').value;
+
+    try{
+      const data=await fetchSaju({
+        year:y, month:m, day:d, hour:h, min:mi,
+        isMale:String(isMale), isLunar:String(isLunar), leap:String(leap), pivotMin:String(pivotMin)
+      });
+      document.getElementById('raw').textContent=JSON.stringify(data,null,2);
+
+      // 요약 (서버가 내려줄 경우 활용: data.solarText, data.lunarText, data.termName/termDate)
+      setText('solarText', data.solarText || `${y}년 ${String(m).padStart(2,'0')}월 ${String(d).padStart(2,'0')}일 ${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`);
+      setText('lunarText', data.lunarText || (isLunar? `요청: ${m}월 ${d}일 ${leap?'(윤달)':''}`:'-'));
+      setText('termText',  data.termName ? `${data.termName} ${data.termDate||''}` : '-');
+      setText('stdText',   `pivot ${pivotMin}분`);
+
+      // 4주
+      const [ys,yb]=splitGanji(data.yearGanji);
+      const [ms,mb]=splitGanji(data.monthGanji);
+      const [ds,db]=splitGanji(data.dayGanji);
+      const [hs,hb]=splitGanji(data.hourGanji);
+      setBox('yStem',ys); setBox('yBranch',yb);
+      setBox('mStem',ms); setBox('mBranch',mb);
+      setBox('dStem',ds); setBox('dBranch',db);
+      setBox('hStem',hs); setBox('hBranch',hb);
+      renderElemCount([ys,yb,ms,mb,ds,db,hs,hb]);
+
+      // 대운/세운 가로
+      renderDaeSeun(data);
+
+      // 연주: 1975 ~ 출생+120
+      const start=1975;
+      const end=y+120;
+      const cur=(new Date()).getFullYear();
+      renderYearRow(start,end,cur);
+
+      // 월주: 기본은 현재연도 로드
+      loadMonthRow(cur);
+
+      msg.textContent='완료';
+    }catch(e){
+      msg.textContent='오류: '+(e?.message||String(e));
+    }
+  });
+</script>
+</body>
+</html>
