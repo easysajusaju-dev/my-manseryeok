@@ -4,7 +4,7 @@ import com.saju.manse_api.service.SajuResult
 import com.saju.manse_api.service.SajuService
 import org.springframework.web.bind.annotation.*
 
-@CrossOrigin(origins = ["https://easysajusaju-dev.github.io"]) // GitHub Pages 허용
+@CrossOrigin(origins = ["*"]) // 프론트/프록시 어디서든 호출 가능(원하면 특정 도메인으로 바꿔드림)
 @RestController
 class ManseController {
 
