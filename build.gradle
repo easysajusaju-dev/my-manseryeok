@@ -35,3 +35,8 @@ tasks.named('test') {
 tasks.named('bootJar') {
     archiveFileName = 'app.jar'
 }
+tasks.named('bootJar') {
+duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+Render → Clear build cache → Manual Deploy
