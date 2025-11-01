@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>만세력 조회(오행 색상)</title>
+<style>
+  :root{
+    --line:#e5e7eb; --muted:#6b7280; --bg:#fafafa;
+    --wood:#10b981; --fire:#ef4444; --earth:#f59e0b; --metal:#9ca3af; --water:#111827;
+    --wood-t:#ffffff; --fire-t:#ffffff; --earth-t:#111111; --metal-t:#111111; --water-t:#ffffff;
+  }
+  *{box-sizing:border-box}
+  body{font-family:system-ui,Segoe UI,Malgun Gothic,Apple SD Gothic Neo,Arial;max-width:980px;margin:24px auto;line-height:1.55;padding:0 16px}
+  h1{margin:0 0 12px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0}
+  .row>label{flex:1 1 140px}
+  input[type=number],input[type=text]{width:100%;padding:8px;border:1px solid var(--line);border-radius:8px}
+  fieldset{border:1px solid var(--line);border-radius:10px;padding:12px;margin:12px 0;background:var(--bg)}
+  legend{color:#111;font-weight:700}
+  button{padding:10px 16px;border:1px solid var(--line);border-radius:8px;background:#111;color:#fff;cursor:pointer}
+  .note{color:var(--muted);font-size:.92rem}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:10px}
+  .col{text-align:center}
+  .cap{font-size:.9rem;color:#374151;margin-bottom:6px}
+  .big{display:flex;align-items:center;justify-content:center;height:96px;border-radius:12px;font-size:44px;font-weight:800;border:3px solid #111}
+  .small{display:flex;align-items:center;justify-content:center;height:76px;border-radius:12px;font-size:34px;font-weight:700;border:3px solid #111;margin-top:8px}
+  .role{margin-top:8px;font-weight:700}
+  .wx-wood{background:var(--wood); color:var(--wood-t)}
+  .wx-fire{background:var(--fire); color:var(--fire-t)}
+  .wx-earth{background:var(--earth); color:var(--earth-t)}
+  .wx-metal{background:var(--metal); color:var(--metal-t)}
+  .wx-water{background:var(--water); color:var(--water-t)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .chip{padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:#fff}
+  .summary{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .tag{display:inline-block;padding:4px 10px;border:1px solid var(--line);border-radius:999px;background:white;margin-right:6px}
+  table{border-collapse:collapse;width:100%;margin:12px 0}
+  th,td{border:1px solid var(--line);padding:6px 8px;text-align:left}
+  th{background:#f5f5f7}
+  .miniBox{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;border:2px solid #111;margin-right:6px;font-weight:800}
+  @media (max-width:900px){.summary{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+  <h1>만세력 조회(오행 색상)</h1>
+  <p class="note">프록시를 통해 API 호출(CORS 걱정 없음). 첫 호출은 깨우느라 수 초 걸릴 수 있어요.</p>
+
+  <!-- 입력 -->
+  <fieldset>
+    <legend>입력</legend>
+    <div class="row">
+      <label>년 <input id="yy" type="number" value="1973"></label>
+      <label>월 <input id="mm" type="number" min="1" max="12" value="5"></label>
+      <label>일 <input id="dd" type="number" min="1" max="31" value="13"></label>
+    </div>
+    <div class="row">
+      <label>시(0~23) <input id="hh" type="number" min="0" max="23" value="14"></label>
+      <label>분(0~59) <input id="mi" type="number" min="0" max="59" value="0"></label>
+    </div>
+    <div class="row">
+      <label><input type="radio" name="cal" value="solar" checked> 양력</label>
+      <label><input type="radio" name="cal" value="lunar"> 음력</label>
+      <label><input id="leap" type="checkbox" disabled> 윤달</label>
+      <span style="flex:1"></span>
+      <label><input type="radio" name="sex" value="male" checked> 남</label>
+      <label><input type="radio" name="sex" value="female"> 여</label>
+    </div>
+    <div class="row">
+      <label><input type="radio" name="pivot" value="0"> 시주 경계 정시(0분)</label>
+      <label><input type="radio" name="pivot" value="30" checked> 시주 경계 반시(30분)</label>
+    </div>
+    <div class="row">
+      <label style="flex:1 1 100%">프록시 주소
+        <input id="proxy" type="text" value="https://saju-proxy.onrender.com">
+      </label>
+    </div>
+    <div class="row">
+      <button id="btn">만세력 조회</button>
+      <span id="msg" class="note" style="margin-left:10px"></span>
+    </div>
+  </fieldset>
+
+  <!-- 요약 -->
+  <fieldset>
+    <legend>요약</legend>
+    <div class="summary">
+      <div>
+        <div><span class="tag">양력</span><span id="solarText">-</span></div>
+        <div><span class="tag">정시 기준</span><span id="stdText">-</span></div>
+      </div>
+      <div>
+        <div><span class="tag">음력</span><span id="lunarText">-</span></div>
+        <div><span class="tag">절기</span><span id="termText">-</span></div>
+      </div>
+    </div>
+  </fieldset>
+
+  <!-- 4주 -->
+  <fieldset>
+    <legend>4주(오행 색상)</legend>
+    <div class="grid4">
+      <div class="col">
+        <div class="cap">년</div>
+        <div class="big"   id="yStem">-</div>
+        <div class="small" id="yBranch">-</div>
+        <div class="role"  id="yRole" style="color:#374151">-</div>
+      </div>
+      <div class="col">
+        <div class="cap">월</div>
+        <div class="big"   id="mStem">-</div>
+        <div class="small" id="mBranch">-</div>
+        <div class="role"  id="mRole" style="color:#374151">-</div>
+      </div>
+      <div class="col">
+        <div class="cap">일 (나)</div>
+        <div class="big"   id="dStem">-</div>
+        <div class="small" id="dBranch">-</div>
+        <div class="role"  id="dRole" style="color:#374151">일간</div>
+      </div>
+      <div class="col">
+        <div class="cap">시</div>
+        <div class="big"   id="hStem">-</div>
+        <div class="small" id="hBranch">-</div>
+        <div class="role"  id="hRole" style="color:#374151">-</div>
+      </div>
+    </div>
+
+    <div class="chips" id="wxChips">
+      <!-- 오행 개수 표시(목/화/토/금/수) -->
+    </div>
+  </fieldset>
+
+  <!-- 대운/세운 -->
+  <fieldset>
+    <legend>대운</legend>
+    <table id="tblDae">
+      <thead><tr><th>대운</th><th>간지</th><th>시작년도</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </fieldset>
+  <fieldset>
+    <legend>세운(10년)</legend>
+    <table id="tblSeun">
+      <thead><tr><th>년도</th><th>간지</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </fieldset>
+
+  <details>
+    <summary>원본 JSON</summary>
+    <pre id="raw">-</pre>
+  </details>
+
+<script>
+  // ===== 설정 =====
+  const STEM_ELEM = {'甲':'wood','乙':'wood','丙':'fire','丁':'fire','戊':'earth','己':'earth','庚':'metal','辛':'metal','壬':'water','癸':'water'};
+  const BRANCH_ELEM = {'子':'water','丑':'earth','寅':'wood','卯':'wood','辰':'earth','巳':'fire','午':'fire','未':'earth','申':'metal','酉':'metal','戌':'earth','亥':'water'};
+  const E_STYLE = {
+    wood:{bg:'var(--wood)', color:'var(--wood-t)'},
+    fire:{bg:'var(--fire)', color:'var(--fire-t)'},
+    earth:{bg:'var(--earth)', color:'var(--earth-t)'},
+    metal:{bg:'var(--metal)', color:'var(--metal-t)'},
+    water:{bg:'var(--water)', color:'var(--water-t)'}
+  };
+  const YANG = '甲丙戊庚壬';
+
+  function elemOf(han){
+    if(!han) return null;
+    if(STEM_ELEM[han])   return STEM_ELEM[han];
+    if(BRANCH_ELEM[han]) return BRANCH_ELEM[han];
+    return null;
+  }
+  function applyBox(id, ch){
+    const el = document.getElementById(id);
+    el.textContent = ch || '-';
+    const e = elemOf(ch);
+    el.classList.remove('wx-wood','wx-fire','wx-earth','wx-metal','wx-water');
+    if(e) el.classList.add('wx-'+e);
+  }
+
+  // 십신(아주 단순화된 계산: 일간 기준, 음양 동일=정, 다르면 편)
+  const CYCLE = ['wood','fire','earth','metal','water'];
+  const CONTROL = {wood:'earth', fire:'metal', earth:'water', metal:'wood', water:'fire'};
+  function idx(e){return CYCLE.indexOf(e);}
+  function isYang(stem){ return YANG.includes(stem); }
+  function tenGod(dayStem, otherStem){
+    if(!dayStem || !otherStem) return '-';
+    const ed = elemOf(dayStem), eo = elemOf(otherStem);
+    if(!ed || !eo) return '-';
+    const sameParity = isYang(dayStem) === isYang(otherStem);
+    if(eo===ed) return sameParity?'비견':'겁재';
+    if(eo===CYCLE[(idx(ed)+1)%5]) return sameParity?'식신':'상관';          // 내가 생하는 쪽
+    if(eo===CYCLE[(idx(ed)+4)%5]) return sameParity?'정인':'편인';          // 나를 생하는 쪽
+    if(eo===CONTROL[ed])          return sameParity?'정재':'편재';          // 내가 극하는 쪽
+    if(CONTROL[eo]===ed)          return sameParity?'정관':'편관';          // 나를 극하는 쪽
+    return '-';
+  }
+
+  // 입력 보조
+  document.querySelectorAll('input[name=cal]').forEach(r=>{
+    r.addEventListener('change', ()=>{
+      const isLunar = document.querySelector('input[name=cal]:checked').value==='lunar';
+      const leap = document.getElementById('leap');
+      leap.disabled = !isLunar;
+      if(!isLunar) leap.checked = false;
+    });
+  });
+  function iv(id){ const n=+document.getElementById(id).value; return Number.isFinite(n)?n:0; }
+  function v(id){ return document.getElementById(id).value.trim(); }
+  function setText(id,t){ document.getElementById(id).textContent = t; }
+  function fillTable(tbody, rows){ tbody.innerHTML = rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join(''); }
+  function splitGanji(g){ return [g?.[0]||'-', g?.[1]||'-']; }
+
+  document.getElementById('btn').addEventListener('click', async ()=>{
+    const msg = document.getElementById('msg'); msg.textContent='조회 중...';
+    const y=iv('yy'), m=iv('mm'), d=iv('dd'), h=iv('hh'), mi=iv('mi');
+    const isLunar = document.querySelector('input[name=cal]:checked').value==='lunar';
+    const leap = isLunar && document.getElementById('leap').checked;
+    const isMale = document.querySelector('input[name=sex]:checked').value==='male';
+    const pivotMin = +document.querySelector('input[name=pivot]:checked').value;
+    const PROXY = v('proxy') || 'https://saju-proxy.onrender.com';
+
+    const baseQS = {year:y,month:m,day:d,hour:h,min:mi,isMale,pivotMin,isLunar,leap};
+    let res = await fetch(`${PROXY}/proxy/saju?`+new URLSearchParams(baseQS), {cache:'no-store'});
+    if(isLunar && !res.ok){ // 음력 실패 시 윤달 토글 재시도
+      baseQS.leap = !leap;
+      res = await fetch(`${PROXY}/proxy/saju?`+new URLSearchParams(baseQS), {cache:'no-store'});
+    }
+    if(!res.ok){
+      const t = await res.text(); msg.textContent = '오류: '+t; return;
+    }
+    const data = await res.json();
+    document.getElementById('raw').textContent = JSON.stringify(data,null,2);
+
+    // 요약
+    setText('solarText', `${y}년 ${String(m).padStart(2,'0')}월 ${String(d).padStart(2,'0')}일 ${String(h).padStart(2,'0')}:${String(mi).padStart(2,'0')}`);
+    setText('stdText',   `pivot ${pivotMin}분`);
+    setText('lunarText', isLunar ? `요청: ${m}월 ${d}일 ${leap?'(윤달)':''}` : '-');
+    setText('termText',  '-');
+
+    // 4주 칸
+    const [yS,yB] = splitGanji(data.yearGanji);
+    const [mS,mB] = splitGanji(data.monthGanji);
+    const [dS,dB] = splitGanji(data.dayGanji);
+    const [hS,hB] = splitGanji(data.hourGanji);
+
+    applyBox('yStem', yS); applyBox('yBranch', yB);
+    applyBox('mStem', mS); applyBox('mBranch', mB);
+    applyBox('dStem', dS); applyBox('dBranch', dB);
+    applyBox('hStem', hS); applyBox('hBranch', hB);
+
+    // 십신(일간 대비: 년/월/시 간에만 표시)
+    setText('yRole', tenGod(dS, yS));
+    setText('mRole', tenGod(dS, mS));
+    setText('hRole', tenGod(dS, hS));
+
+    // 오행 개수(8글자: 간·지 합산)
+    const chars = [yS,yB,mS,mB,dS,dB,hS,hB];
+    const cnt = {wood:0,fire:0,earth:0,metal:0,water:0};
+    chars.forEach(c=>{ const e=elemOf(c); if(e) cnt[e]++; });
+    const wx = document.getElementById('wxChips');
+    wx.innerHTML = `
+      <span class="chip" style="background:var(--wood);color:var(--wood-t)">목(${cnt.wood})</span>
+      <span class="chip" style="background:var(--fire);color:var(--fire-t)">화(${cnt.fire})</span>
+      <span class="chip" style="background:var(--earth);color:var(--earth-t)">토(${cnt.earth})</span>
+      <span class="chip" style="background:var(--metal);color:var(--metal-t)">금(${cnt.metal})</span>
+      <span class="chip" style="background:var(--water);color:var(--water-t)">수(${cnt.water})</span>
+    `;
+
+    // 대운/세운(간 색상 표시: 간의 오행으로 미니박스 배경)
+    const daeBody = document.querySelector('#tblDae tbody');
+    const daeRows = (data.daeWoon||[]).map((label,i)=>{
+      const gj = (data.daeWoonGanji||[])[i]||'';
+      const yr = (data.daeWoonYear||[])[i]||'';
+      const stem = gj?.[0]||'';
+      const e = elemOf(stem); const style = e?E_STYLE[e]:null;
+      const box = `<span class="miniBox" style="background:${style?style.bg:'#fff'};color:${style?style.color:'#111'}">${stem||'-'}</span>${gj||'-'}`;
+      return [label||'-', box, yr||'-'];
+    });
+    fillTable(daeBody, daeRows);
+
+    const seunBody = document.querySelector('#tblSeun tbody');
+    const seunRows = (data.seunYear||[]).map((yy,i)=>{
+      const gj = (data.seunGanji||[])[i]||'';
+      const stem = gj?.[0]||''; const e=elemOf(stem); const style = e?E_STYLE[e]:null;
+      const box = `<span class="miniBox" style="background:${style?style.bg:'#fff'};color:${style?style.color:'#111'}">${stem||'-'}</span>${gj||'-'}`;
+      return [String(yy||'-'), box];
+    });
+    fillTable(seunBody, seunRows);
+
+    document.getElementById('msg').textContent='완료';
+  });
+</script>
+</body>
+</html>
