@@ -3,27 +3,34 @@ package com.saju.manse_api.repo
 import com.saju.manse_api.db.DbProvider
 import java.time.LocalDateTime
 
-data class SeasonPoint(val name:String, val dt: LocalDateTime)
+data class SeasonPoint(val name: String, val dt: LocalDateTime)
 
 object SeasonRepo {
 
-
-    private fun rowsForYears(y1:Int, y2:Int): List<SeasonPoint> {
-        val sql = "SELECT NAME, YEAR, MONTH, DAY, HOUR, MINUTE FROM SEASON WHERE YEAR IN (?, ?) ORDER BY YEAR, MONTH, DAY, HOUR, MINUTE"
+    private fun selectYears(vararg years: Int): List<SeasonPoint> {
+        val placeholders = years.joinToString(",") { "?" }
+        val sql = """
+            SELECT NAME, YEAR, MONTH, DAY, HOUR, MINUTE
+            FROM SEASON
+            WHERE YEAR IN ($placeholders)
+            ORDER BY YEAR, MONTH, DAY, HOUR, MINUTE
+        """.trimIndent()
         DbProvider.seasonConn().use { conn ->
             conn.prepareStatement(sql).use { ps ->
-                ps.setInt(1, y1)
-                ps.setInt(2, y2)
+                years.forEachIndexed { i, y -> ps.setInt(i + 1, y) }
                 ps.executeQuery().use { rs ->
                     val list = mutableListOf<SeasonPoint>()
                     while (rs.next()) {
-                        val name = rs.getString("NAME")
-                        val y = rs.getInt("YEAR")
-                        val m = rs.getInt("MONTH")
-                        val d = rs.getInt("DAY")
-                        val h = rs.getInt("HOUR")
-                        val min = rs.getInt("MINUTE")
-                        list.add(SeasonPoint(name, LocalDateTime.of(y, m, d, h, min)))
+                        list += SeasonPoint(
+                            rs.getString("NAME"),
+                            LocalDateTime.of(
+                                rs.getInt("YEAR"),
+                                rs.getInt("MONTH"),
+                                rs.getInt("DAY"),
+                                rs.getInt("HOUR"),
+                                rs.getInt("MINUTE")
+                            )
+                        )
                     }
                     return list
                 }
@@ -31,17 +38,24 @@ object SeasonRepo {
         }
     }
 
-    fun nextAfter(y:Int, m:Int, d:Int, h:Int): SeasonPoint {
-        val birth = LocalDateTime.of(y, m, d, h, 0)
-        val list = rowsForYears(y, y+1)
-        return list.firstOrNull { it.dt.isAfter(birth) }
-            ?: rowsForYears(y+1, y+2).first { it.dt.isAfter(birth) }
+    // 기준 시각 이후 첫 절기
+    fun nextAfter(y: Int, m: Int, d: Int, h: Int): SeasonPoint {
+        val base = LocalDateTime.of(y, m, d, h, 0)
+        return (selectYears(y, y + 1, y + 2)).firstOrNull { it.dt.isAfter(base) }
+            ?: selectYears(y + 2, y + 3).first { it.dt.isAfter(base) }
     }
 
-    fun prevBefore(y:Int, m:Int, d:Int, h:Int): SeasonPoint {
-        val birth = LocalDateTime.of(y, m, d, h, 0)
-        val list = rowsForYears(y-1, y)
-        return list.lastOrNull { it.dt.isBefore(birth) }
-            ?: rowsForYears(y-2, y-1).last { it.dt.isBefore(birth) }
+    // 기준 시각 이전 마지막 절기
+    fun prevBefore(y: Int, m: Int, d: Int, h: Int): SeasonPoint {
+        val base = LocalDateTime.of(y, m, d, h, 0)
+        return (selectYears(y - 2, y - 1, y)).lastOrNull { it.dt.isBefore(base) }
+            ?: selectYears(y - 3, y - 2).last { it.dt.isBefore(base) }
+    }
+
+    // 기준 시각이 속한 '현재 절기' (가장 가까운 과거 절기)
+    fun currentAt(y: Int, m: Int, d: Int, h: Int): SeasonPoint {
+        val base = LocalDateTime.of(y, m, d, h, 0)
+        val list = selectYears(y - 1, y, y + 1)
+        return list.lastOrNull { !it.dt.isAfter(base) } ?: list.first()
     }
 }
