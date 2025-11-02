@@ -232,10 +232,10 @@
   }
 
   async function fetchSaju(q){
-    let r=await fetch(PROXY()+'/proxy/saju?'+new URLSearchParams(q),{cache:'no-store'});
+    let r=await fetch(PROXY()+'/proxy/saju/compat?'+new URLSearchParams(q),{cache:'no-store'});
     if(q.isLunar==='true' && !r.ok){
       const q2={...q, leap:(q.leap==='true'?'false':'true')};
-      r=await fetch(PROXY()+'/proxy/saju?'+new URLSearchParams(q2),{cache:'no-store'});
+      r=await fetch(PROXY()+'/proxy/saju/compat?'+new URLSearchParams(q2),{cache:'no-store'});
     }
     if(!r.ok) throw new Error(await r.text());
     return r.json();
@@ -261,8 +261,8 @@
     const firstYear=(data.daeWoonYear||[])[0]||birthYear;
     const startAge=Math.max(1, firstYear - birthYear + 1);   // 대운수
     const dir=(data.daeWoon||[])[0]||''; const dirLabel=dir.includes('순행')?'정사':'역사';
-    header.textContent=`대운수 : ${startAge}(${dirLabel})`;
-
+    header.textContent = 대운수 : ${data.daeNum}(${data.daeDir});
+    
     const ages=[]; for(let a=startAge;a<=100;a+=10) ages.push(a);
     const gjList=data.daeWoonGanji||[];
     for(let i=0;i<ages.length && i<gjList.length;i++){
