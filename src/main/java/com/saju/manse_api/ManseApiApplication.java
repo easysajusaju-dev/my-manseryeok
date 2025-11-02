@@ -2,7 +2,7 @@ package com.saju.manse_api;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct; // ← 여기만 jakarta로 교체
 import java.util.TimeZone;
 
 @SpringBootApplication
