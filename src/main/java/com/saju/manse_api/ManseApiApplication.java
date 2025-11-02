@@ -9,7 +9,7 @@ import java.util.TimeZone;
 public class ManseApiApplication {
 @PostConstruct
 public void init() {
-TimeZone.setDefault(TimeZone.getTimeZone("Asia/Seoul")); // 한국 표준시
+TimeZone.setDefault(TimeZone.getTimeZone("Asia/Seoul"));
 }
 public static void main(String[] args) {
 SpringApplication.run(ManseApiApplication.class, args);
