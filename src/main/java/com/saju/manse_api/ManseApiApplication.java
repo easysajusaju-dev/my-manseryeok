@@ -2,10 +2,16 @@ package com.saju.manse_api;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import javax.annotation.PostConstruct;
+import java.util.TimeZone;
 
-@SpringBootApplication(scanBasePackages = {"com.saju"})  // 스캔 범위 확장!
+@SpringBootApplication
 public class ManseApiApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(ManseApiApplication.class, args);
-    }
+@PostConstruct
+public void init() {
+TimeZone.setDefault(TimeZone.getTimeZone("Asia/Seoul")); // 한국 표준시
+}
+public static void main(String[] args) {
+SpringApplication.run(ManseApiApplication.class, args);
+}
 }
