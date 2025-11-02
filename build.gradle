@@ -11,18 +11,13 @@ version = '0.0.1-SNAPSHOT'
 description = 'Demo project for Spring Boot'
 
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
+    toolchain { languageVersion = JavaLanguageVersion.of(21) }
 }
-
 kotlin {
     jvmToolchain(21)
 }
 
-repositories {
-    mavenCentral()
-}
+repositories { mavenCentral() }
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -34,12 +29,9 @@ dependencies {
     testImplementation 'org.jetbrains.kotlin:kotlin-test'
 }
 
-tasks.named('test') {
-    useJUnitPlatform()
-}
+tasks.named('test') { useJUnitPlatform() }
 
 tasks.named('bootJar') {
     archiveFileName = 'app.jar'
-    // 중복 클래스(예: 컨트롤러 파일이 2개일 때)로 인해 빌드가 멈추지 않게 예외 처리
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
