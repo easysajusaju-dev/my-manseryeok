@@ -9,6 +9,7 @@ import kotlin.math.ceil
 import kotlin.math.max
 import kotlin.math.round
 
+// 응답 모델
 data class SajuResult(
     val yearGanji: String,
     val monthGanji: String,
@@ -43,6 +44,7 @@ object SajuService {
     private val CYCLE = listOf("wood","fire","earth","metal","water")
     private val CONTROL = mapOf("wood" to "earth","fire" to "metal","earth" to "water","metal" to "wood","water" to "fire")
     private val YANG = setOf("甲","丙","戊","庚","壬")
+
     private fun isYang(s: String) = s in YANG
     private fun elemOfStem(s: String) = STEM_ELEM[s] ?: "earth"
     private fun z2(n: Int) = if (n < 10) "0$n" else "$n"
@@ -72,6 +74,7 @@ object SajuService {
         }
     }
 
+    // 기본(/saju): daeNum/daeDir 포함
     fun getSaju(
         year: Int, month: Int, day: Int, hour: Int, minute: Int,
         isLunar: Boolean, leap: Boolean, isMale: Boolean, pivotMinute: Int = 30
@@ -99,6 +102,7 @@ object SajuService {
         val birth = LocalDateTime.of(info.sy, info.sm, info.sd, hour, minute)
         val termPoint = if (forward) SeasonRepo.nextAfter(info.sy, info.sm, info.sd, hour)
                         else         SeasonRepo.prevBefore(info.sy, info.sm, info.sd, hour)
+
         val hoursDiff = abs(Duration.between(birth, termPoint.dt).toHours().toDouble())
         val daeNum    = max(1, ceil((hoursDiff / 24.0) / 3.0).toInt())
         val startYear = info.sy + daeNum - 1
@@ -140,7 +144,7 @@ object SajuService {
             yearGod = yearGod,
             monthGod = monthGod,
             dayGod = dayGod,
-            hourGod = hourGod,
+            hourGod = hourGod,     // ← 빠뜨리면 컴파일 에러
             daeNum = daeNum,
             daeDir = dirLabel,
             daeWoon = daeWoon,
@@ -155,6 +159,7 @@ object SajuService {
         )
     }
 
+    // 앱 호환(/saju/compat) : 정시/동경시 -30/절기 +10/대운 수 floor 가정
     fun getSajuCompat(
         year: Int, month: Int, day: Int, hour: Int, minute: Int,
         isLunar: Boolean, leap: Boolean, isMale: Boolean,
@@ -231,7 +236,7 @@ object SajuService {
             yearGod = yearGod,
             monthGod = monthGod,
             dayGod = dayGod,
-            hourGod = hourGod,
+            hourGod = hourGod,  // ← 빠뜨리면 컴파일 실패
             daeNum = daeNum,
             daeDir = dirLabel,
             daeWoon = daeWoon,
