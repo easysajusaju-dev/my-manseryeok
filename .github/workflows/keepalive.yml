@@ -2,7 +2,7 @@ name: keepalive
 
 on:
   schedule:
-    - cron: '*/5 * * * *'   # 5분마다 (GitHub Actions 권장 최소 간격)
+    - cron: '*/10 * * * *'   # 5분마다 (GitHub Actions 권장 최소 간격)
   workflow_dispatch:        # 필요시 수동 실행
   push:
     paths:
