@@ -1,6 +1,6 @@
-       name: keepalive
-
+name: keepalive   ← 왼쪽에 공백 단 하나도 없어야 함
 on:
+jobs:
   schedule:
     - cron: '*/10 * * * *'     # 10분마다 실행
   workflow_dispatch:
