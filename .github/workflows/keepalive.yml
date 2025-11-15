@@ -1,18 +1,42 @@
-name: keepalive
+       name: keepalive
 
 on:
   schedule:
-    - cron: '*/10 * * * *'   # 5분마다 (GitHub Actions 권장 최소 간격)
-  workflow_dispatch:        # 필요시 수동 실행
+    - cron: '*/10 * * * *'     # 10분마다 실행
+  workflow_dispatch:
   push:
     paths:
-      - ".github/workflows/keepalive.yml"  # 이 파일 저장 시 즉시 1회 실행
+      - ".github/workflows/keepalive.yml" 
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping API
+      # 1) 기존 만세력 API 깨우기
+      - name: Ping Manseryeok API
         run: curl -fsS -m 10 https://my-manseryeok.onrender.com/ping || true
+
+      # 2) 기존 Proxy 서버 깨우기
       - name: Ping Proxy
         run: curl -fsS -m 10 https://saju-proxy.onrender.com/ping || true
+
+      # ----------------------------
+      # 추가된 너의 실제 서비스 서버들
+      # ----------------------------
+
+      # 3) 결제 서버 (Vercel)
+      - name: Ping Payment Server
+        run: curl -fsS -m 10 https://easysaju-test.vercel.app/api/ping || true
+
+      # 4) PRODUCT API (상품 목록/오더 생성용 GAS WebApp)
+      - name: Ping Products GAS
+        run: curl -fsS -m 10 "https://script.google.com/macros/s/AKfycbxqdItEzCRdoaBbHWUM3EOqaCIBGRsT3uF6huiC2sfvt_RyyULixbo7ipXAp8kvfOuA/exec?ping=1" || true
+
+      # 5) GAS TOKEN STORE (결제 결과 저장 WebApp)
+      - name: Ping GAS Token Store
+        run: curl -fsS -m 10 "https://script.google.com/macros/s/AKfycbx1LiZJ2A1beNiUOoScSswp97Bpf_g1eNqn1UanX3hFlA-Nqnoj3Qg0RPF0fLVE2CRuQQ/exec?ping=1" || true
+
+      # 6) 주문 기록용 시트 WebApp
+      - name: Ping Order Logger GAS
+        run: curl -fsS -m 10 "https://script.google.com/macros/s/AKfycbzhi4556hgBKctN3KVBlPdkl1vFD3oG7Wv7Hdm6pk16VGG8OF6q6EaPT8t_5WTX87Jb/exec?ping=1" || true
+
