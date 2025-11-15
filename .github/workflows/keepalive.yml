@@ -2,7 +2,7 @@ name: keepalive
 
 on:
   schedule:
-    - cron: "*/10 * * * *"   # 10분마다 실행
+    - cron: "*/10 * * * *"    # 10분마다 실행
   workflow_dispatch:
   push:
     paths:
@@ -11,27 +11,57 @@ on:
 jobs:
   ping:
     runs-on: ubuntu-latest
+
     steps:
-      # 1) 기존 만세력 API 깨우기
-      - name: Ping Manseryeok API
+      ###############################################################
+      # 🔥 운영용 서비스 KeepAlive (실제 현재 고객이 사용하는 버전)
+      ###############################################################
+
+      # 1) 만세력 API (운영)
+      - name: [운영] Ping Manseryeok API
         run: curl -fsS -m 10 https://my-manseryeok.onrender.com/ping || true
 
-      # 2) Proxy 서버 깨우기
-      - name: Ping Proxy
+      # 2) Proxy 서버 (운영)
+      - name: [운영] Ping Proxy Server
         run: curl -fsS -m 10 https://saju-proxy.onrender.com/ping || true
 
-      # 3) 결제 서버 (Vercel)
-      - name: Ping Payment Server
+      # 3) 결제 서버 (운영 - my-payment-server-test.vercel.app)
+      - name: [운영] Ping Payment Server
         run: curl -fsS -m 10 https://easysaju-test.vercel.app/api/ping || true
 
-      # 4) Products API (GAS WebApp)
-      - name: Ping Products GAS
+      # 4) 상품 목록 조회 WebApp (운영)
+      - name: [운영] Ping Products GAS
         run: curl -fsS -m 10 "https://script.google.com/macros/s/AKfycbxqdItEzCRdoaBbHWUM3EOqaCIBGRsT3uF6huiC2sfvt_RyyULixbo7ipXAp8kvfOuA/exec?ping=1" || true
 
-      # 5) 결제 토큰 저장용 GAS WebApp
-      - name: Ping GAS Token Store
+      # 5) 결제 토큰 저장 WebApp (운영)
+      - name: [운영] Ping GAS Token Store
         run: curl -fsS -m 10 "https://script.google.com/macros/s/AKfycbx1LiZJ2A1beNiUOoScSswp97Bpf_g1eNqn1UanX3hFlA-Nqnoj3Qg0RPF0fLVE2CRuQQ/exec?ping=1" || true
 
-      # 6) 주문 기록용 Logger GAS WebApp
-      - name: Ping Order Logger GAS
+      # 6) 주문 기록용 Logger WebApp (운영)
+      - name: [운영] Ping Order Logger
         run: curl -fsS -m 10 "https://script.google.com/macros/s/AKfycbzhi4556hgBKctN3KVBlPdkl1vFD3oG7Wv7Hdm6pk16VGG8OF6q6EaPT8t_5WTX87Jb/exec?ping=1" || true
+
+
+      ###############################################################
+      # 🔧 테스트용 서비스 KeepAlive (새로 복제한 환경)
+      ###############################################################
+
+      # 7) 테스트 결제 서버 (my-payment-server.vercel.app)
+      - name: [테스트] Ping Payment Server
+        run: curl -fsS -m 10 https://my-payment-server.vercel.app/api/ping || true
+
+      # 8) 테스트 프론트 (easysaju-dev.vercel.app)
+      - name: [테스트] Ping Test Front
+        run: curl -fsS -m 10 https://easysaju-dev.vercel.app || true
+
+      # 9) 테스트 - 주문 기록 WebApp
+      - name: [테스트] Ping Order Logger (TEST)
+        run: curl -fsS -m 10 "https://script.google.com/macros/s/AKfycbz_SRAMhhOT396196sgEzHeDMNk_oF7IL-M5BpAReKum04hVtkVYw0AwY71P4SyEdm-/exec?ping=1" || true
+
+      # 10) 테스트 - 상품 목록 조회 WebApp
+      - name: [테스트] Ping Products GAS (TEST)
+        run: curl -fsS -m 10 "https://script.google.com/macros/s/AKfycbzi-6WMsfTiDCR8OlPvx4Z6V8NMPxr94nmow-kO48HDCDMyvufOzrS9ZbZu9LWo2sMEDg/exec?ping=1" || true
+
+      # 11) 테스트 - 결제 토큰 WebApp
+      - name: [테스트] Ping GAS Token Store (TEST)
+        run: curl -fsS -m 10 "https://script.google.com/macros/s/AKfycbyfxB-Vml1Wd1fhW98ztLRyduVX_PI81WatJQza1FNuDOswAJEcntYGBZWo8cqtyzQ/exec?ping=1" || true
