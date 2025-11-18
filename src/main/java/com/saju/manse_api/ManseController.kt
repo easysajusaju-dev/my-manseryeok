@@ -29,13 +29,23 @@ fun saju(
 
 // 앱 호환 규칙(정시/동경시-30/절기+10/대운수 floor) 강제
 @GetMapping("/saju/compat")
-fun sajuCompat(...): SajuResult {
+fun sajuCompat(
+    @RequestParam("year") year: Int,
+    @RequestParam("month") month: Int,
+    @RequestParam("day") day: Int,
+    @RequestParam("hour") hour: Int,
+    @RequestParam("min") min: Int,
+    @RequestParam("isLunar") isLunar: Boolean,
+    @RequestParam("leap") leap: Boolean,
+    @RequestParam("isMale") isMale: Boolean,
+    @RequestParam("pivotMin", required = false, defaultValue = "30") pivotMin: Int
+): SajuResult {
     return SajuService.getSajuCompat(
         year, month, day, hour, min,
         isLunar, leap, isMale,
-        pivotMin = 30,      // 앱과 동일: 반시 기준
-        tzAdjust = 0,       // 앱과 동일
-        seasonAdjust = 0,   // 절기 보정 OFF
-        daeRound = "ceil"   // 앱과 동일
+        pivotMin = 30,   // 정답
+        tzAdjust = 0,    // 정답
+        seasonAdjust = 0, // 정답
+        daeRound = "ceil" // 정답
     )
 }
