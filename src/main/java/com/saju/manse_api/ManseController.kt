@@ -44,7 +44,7 @@ fun sajuCompat(
         isLunar, leap, isMale,
         pivotMin = 0,      // 정시(0분)
         tzAdjust = -30,    // 동경시 보정(-30분)
-        seasonAdjust = 10, // 절기 +10분 보정
+        seasonAdjust = 0, // 절기 +10분 보정
         daeRound = "floor" // 대운수 내림
     )
 }
