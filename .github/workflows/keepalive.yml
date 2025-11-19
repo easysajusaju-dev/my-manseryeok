@@ -16,11 +16,11 @@ jobs:
 
       # ===== 운영용 서비스 =====
 
-      - name: 운영 - Ping Manseryeok API
-        run: curl -fsS -m 10 https://my-manseryeok.onrender.com/ping || true
+      # =====   - name: 운영 - Ping Manseryeok API
+     # =====  run: curl -fsS -m 10 https://my-manseryeok.onrender.com/ping || true
 
-      - name: 운영 - Ping Proxy Server
-        run: curl -fsS -m 10 https://saju-proxy.onrender.com/ping || true
+     # =====      - name: 운영 - Ping Proxy Server
+      # =====         run: curl -fsS -m 10 https://saju-proxy.onrender.com/ping || true
 
       - name: 운영 - Ping Payment Server
         run: curl -fsS -m 10 https://easysaju-test.vercel.app/api/ping || true
