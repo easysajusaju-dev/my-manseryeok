@@ -196,3 +196,94 @@ object SajuService {
         )
     }
 }
+// 앱 호환(/saju/compat) : 정시/동경시 -30/절기 +0/대운 수 floor
+fun getSajuCompat(
+    year: Int, month: Int, day: Int, hour: Int, minute: Int,
+    isLunar: Boolean, leap: Boolean, isMale: Boolean,
+    pivotMin: Int = 0, tzAdjust: Int = -30, seasonAdjust: Int = 0, daeRound: String = "floor"
+): SajuResult {
+
+    val info = if (isLunar) ManseryeokRepo.findByLunar(year, month, day, leap)
+               else         ManseryeokRepo.findBySolar(year, month, day)
+    require(info != null) { "해당 날짜 데이터가 없습니다." }
+
+    val yearGanji  = info!!.hy
+    val monthGanji = info.hm
+    val dayGanji   = info.hd
+
+    val birth = LocalDateTime.of(info.sy, info.sm, info.sd, hour, minute).plusMinutes(tzAdjust.toLong())
+
+    val dayStem = dayGanji.substring(0, 1)
+    val hIdx = hourBranchIndex(birth.hour, birth.minute, pivotMin)
+    val hourJi = JI[hIdx]
+    val dayStemIdx = GAN.indexOf(dayStem)
+    val hourGan = GAN[(dayStemIdx % 5 * 2 + hIdx) % 10]
+    val hourGanji = hourGan + hourJi
+
+    val yearStem = yearGanji.substring(0, 1)
+    val forward = (isMale && isYang(yearStem)) || (!isMale && !isYang(yearStem))
+    val dirLabel = if (forward) "정사" else "역사"
+
+    val rawTerm = if (forward) SeasonRepo.nextAfter(info.sy, info.sm, info.sd, birth.hour)
+                  else         SeasonRepo.prevBefore(info.sy, info.sm, info.sd, birth.hour)
+    val term = rawTerm.dt.plusMinutes(seasonAdjust.toLong())
+
+    val rawYears = (abs(Duration.between(birth, term).toHours()).toDouble() / 24.0) / 3.0
+    val daeNum = when (daeRound.lowercase()) {
+        "floor" -> kotlin.math.floor(rawYears).toInt().coerceAtLeast(1)
+        "round" -> kotlin.math.round(rawYears).toInt().coerceAtLeast(1)
+        else    -> kotlin.math.ceil(rawYears).toInt().coerceAtLeast(1)
+    }
+    val startYear = info.sy + daeNum - 1
+
+    val mStem = monthGanji.substring(0, 1)
+    val mBr   = monthGanji.substring(1, 2)
+    val mStemIdx = GAN.indexOf(mStem)
+    val mBrIdx   = JI.indexOf(mBr)
+
+    val daeWoon = mutableListOf<String>()
+    val daeWoonGanji = mutableListOf<String>()
+    val daeWoonYear = mutableListOf<Int>()
+    for (i in 1..10) {
+        val gi = if (forward) (mStemIdx + i) % 10 else (mStemIdx - i + 100) % 10
+        val bi = if (forward) (mBrIdx   + i) % 12 else (mBrIdx   - i + 120) % 12
+        daeWoon.add("${i * 10}대운 (${if (forward) "순행" else "역사"})")
+        daeWoonGanji.add(GAN[gi] + JI[bi])
+        daeWoonYear.add(startYear + (i - 1) * 10)
+    }
+
+    val seunYear = mutableListOf<Int>()
+    val seunGanji = mutableListOf<String>()
+    for (i in 0 until 10) {
+        val y2 = startYear + i
+        seunYear.add(y2)
+        seunGanji.add(GAN[(y2 + 6) % 10] + JI[(y2 + 8) % 12])
+    }
+
+    val yearGod  = tenGod(dayStem, yearStem)
+    val monthGod = tenGod(dayStem, mStem)
+    val dayGod   = "일간"
+    val hourGod  = tenGod(dayStem, hourGan)
+
+    return SajuResult(
+        yearGanji = yearGanji,
+        monthGanji = monthGanji,
+        dayGanji   = dayGanji,
+        hourGanji  = hourGanji,
+        yearGod = yearGod,
+        monthGod = monthGod,
+        dayGod = dayGod,
+        hourGod = hourGod,
+        daeNum = daeNum,
+        daeDir = dirLabel,
+        daeWoon = daeWoon,
+        daeWoonGanji = daeWoonGanji,
+        daeWoonYear = daeWoonYear,
+        seunYear = seunYear,
+        seunGanji = seunGanji,
+        solarText = "${info.sy}년 ${z2(info.sm)}월 ${z2(info.sd)}일 ${z2(birth.hour)}:${z2(birth.minute)}",
+        lunarText = "음력 ${info.lm}월 ${info.ld}일" + if (info.leap) " (윤달)" else "",
+        termName = rawTerm.name,
+        termDate = term.toString().replace('T', ' ')
+    )
+}
