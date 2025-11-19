@@ -229,4 +229,100 @@ object SajuService {
             pivotMin, tzAdjust, seasonAdjust, daeRound
         )
     }
+    fun debugSaju(
+    year: Int, month: Int, day: Int,
+    hour: Int, minute: Int,
+    isLunar: Boolean, leap: Boolean,
+    isMale: Boolean,
+    pivotMin: Int,
+    tzAdjust: Int,
+    seasonAdjust: Int
+): Map<String, Any?> {
+
+    val info = if (isLunar)
+        ManseryeokRepo.findByLunar(year, month, day, leap)
+    else
+        ManseryeokRepo.findBySolar(year, month, day)
+
+    require(info != null)
+
+    val originalBirth = LocalDateTime.of(info.sy, info.sm, info.sd, hour, minute)
+    val birthAdjusted = originalBirth.plusMinutes(tzAdjust.toLong())
+
+    val ds = info.hd.substring(0, 1)
+    val hIdx = hourBranchIndex(birthAdjusted.hour, birthAdjusted.minute, pivotMin)
+    val hourJi = JI[hIdx]
+
+    val dsIdx = GAN.indexOf(ds)
+    val hourGan = GAN[(dsIdx % 5 * 2 + hIdx) % 10]
+    val hourGanji = hourGan + hourJi
+
+    val ys = info.hy.substring(0, 1)
+    val forward = (isMale && isYang(ys)) || (!isMale && !isYang(ys))
+    val dirLabel = if (forward) "정사" else "역사"
+
+    val rawTerm = if (forward)
+        SeasonRepo.nextAfter(info.sy, info.sm, info.sd, birthAdjusted.hour)
+    else
+        SeasonRepo.prevBefore(info.sy, info.sm, info.sd, birthAdjusted.hour)
+
+    val termAdjusted = rawTerm.dt.plusMinutes(seasonAdjust.toLong())
+
+    val diffHours = kotlin.math.abs(
+        Duration.between(birthAdjusted, termAdjusted).toHours().toDouble()
+    )
+    val daeRaw = (diffHours / 24.0) / 3.0
+    val daeNum = kotlin.math.floor(daeRaw).toInt().coerceAtLeast(1)
+
+    val startYear = info.sy + daeNum - 1
+
+    return mapOf(
+        "input" to mapOf(
+            "year" to year,
+            "month" to month,
+            "day" to day,
+            "hour" to hour,
+            "minute" to minute,
+            "isLunar" to isLunar,
+            "leap" to leap,
+            "isMale" to isMale,
+            "pivotMin" to pivotMin,
+            "tzAdjust" to tzAdjust,
+            "seasonAdjust" to seasonAdjust
+        ),
+        "dbInfo" to mapOf(
+            "solarYMD" to "${info.sy}-${info.sm}-${info.sd}",
+            "lunar" to "${info.lm}-${info.ld}",
+            "hy" to info.hy,
+            "hm" to info.hm,
+            "hd" to info.hd
+        ),
+        "timeCalc" to mapOf(
+            "originalBirth" to originalBirth.toString(),
+            "birthAdjusted" to birthAdjusted.toString(),
+            "hourBranchIndex" to hIdx,
+            "hourJi" to hourJi,
+            "hourGan" to hourGan,
+            "hourGanji" to hourGanji
+        ),
+        "seasonCalc" to mapOf(
+            "rawTermName" to rawTerm.name,
+            "rawTermDate" to rawTerm.dt.toString(),
+            "termAdjusted" to termAdjusted.toString()
+        ),
+        "daeCalc" to mapOf(
+            "diffHours" to diffHours,
+            "daeRaw" to daeRaw,
+            "daeNum" to daeNum,
+            "startYear" to startYear,
+            "dir" to dirLabel
+        ),
+        "finalResult" to getSaju(
+            year, month, day, hour, minute,
+            isLunar, leap, isMale,
+            pivotMin, tzAdjust, seasonAdjust
+        )
+    )
+}
+
 }
