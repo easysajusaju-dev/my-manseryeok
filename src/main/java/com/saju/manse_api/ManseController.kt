@@ -79,4 +79,26 @@ class ManseController {
             daeRound = "floor"      // 대운 내려서 계산
         )
     }
+
+@GetMapping("/saju/debug")
+fun sajuDebug(
+    @RequestParam year:Int,
+    @RequestParam month:Int,
+    @RequestParam day:Int,
+    @RequestParam hour:Int,
+    @RequestParam(name="min", defaultValue="0") min:Int,
+    @RequestParam(name="isLunar", defaultValue="false") isLunar:Boolean,
+    @RequestParam(name="leap", defaultValue="false") leap:Boolean,
+    @RequestParam(name="isMale", defaultValue="true") isMale:Boolean,
+    @RequestParam(name="pivotMin", defaultValue="30") pivotMin:Int,
+    @RequestParam(name="tzAdjust", defaultValue="-30") tzAdjust:Int,
+    @RequestParam(name="seasonAdjust", defaultValue="0") seasonAdjust:Int
+): Map<String, Any?> {
+
+    return SajuService.debugSaju(
+        year, month, day, hour, min,
+        isLunar, leap, isMale,
+        pivotMin, tzAdjust, seasonAdjust
+    )
+}
 }
