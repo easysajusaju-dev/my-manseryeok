@@ -1,7 +1,8 @@
 package com.saju.manse_api
 
 import com.saju.engine.SajuFullEngine
-import com.saju.manse_api.service.SajuService
+import com.saju.manse_api.repo.SajuService
+
 import org.springframework.web.bind.annotation.*
 
 @RestController
