@@ -1,14 +1,18 @@
 plugins {
     id 'java'
     id 'org.jetbrains.kotlin.jvm' version '1.9.23'
-    id 'org.springframework.boot' version '3.3.0'
-    id 'io.spring.dependency-management' version '1.1.5'
+
+    // Spring Boot 버전 안정화
+    id 'org.springframework.boot' version '3.2.5'
+
+    // 문제 많던 1.1.5 → 안정 버전 1.1.4로 다운그레이드
+    id 'io.spring.dependency-management' version '1.1.4'
+
     id 'org.jetbrains.kotlin.plugin.spring' version '1.9.23'
 }
 
 group = 'com.saju'
 version = '0.0.1-SNAPSHOT'
-description = 'Demo project for Spring Boot'
 
 java {
     toolchain { languageVersion = JavaLanguageVersion.of(21) }
@@ -17,19 +21,30 @@ kotlin {
     jvmToolchain(21)
 }
 
-repositories { mavenCentral() }
+repositories {
+    mavenCentral()
+
+    // Render 무료 머신 fallback 레포 (네트워크 불안 문제 해결)
+    maven { url "https://repo1.maven.org/maven2" }
+    maven { url "https://repo.spring.io/release" }
+    maven { url "https://jitpack.io" }
+}
 
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.jetbrains.kotlin:kotlin-reflect'
     implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8'
+
+    // SQLite
     implementation 'org.xerial:sqlite-jdbc:3.46.0.0'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'org.jetbrains.kotlin:kotlin-test'
 }
 
-tasks.named('test') { useJUnitPlatform() }
+tasks.named('test') {
+    useJUnitPlatform()
+}
 
 tasks.named('bootJar') {
     archiveFileName = 'app.jar'
