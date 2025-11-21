@@ -1,7 +1,8 @@
 package com.saju.engine
 
-import com.saju.manse_api.service.SajuService
-import com.saju.manse_api.service.SajuResult
+
+import com.saju.manse_api.repo.SajuService
+import com.saju.manse_api.repo.SajuResult
 
 // ==============================
 // 프론트에서 바로 쓰기 위한 통합 결과 구조
