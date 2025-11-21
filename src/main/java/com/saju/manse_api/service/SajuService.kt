@@ -70,20 +70,37 @@ object SajuService {
     private fun z2(n: Int) = n.toString().padStart(2, '0')
 
     // 십신 계산
-    private fun tenGod(dayStem: String, stem: String): String {
-        val ed = elemOfStem(dayStem)
-        val eo = elemOfStem(stem)
-        val same = isYang(dayStem) == isYang(stem)
+    // 십신 계산 - 완전 교정된 버전
+private fun tenGod(dayStem: String, stem: String): String {
+    val myEl = elemOfStem(dayStem)
+    val targetEl = elemOfStem(stem)
+    val same = isYang(dayStem) == isYang(stem)
 
-        return when {
-            eo == ed -> if (same) "비견" else "겁재"
-            eo == CYCLE[(idx(ed) + 1) % 5] -> if (same) "식신" else "상관"
-            eo == CYCLE[(idx(ed) + 4) % 5] -> if (same) "정인" else "편인"
-            eo == CONTROL[ed] -> if (same) "정재" else "편재"
-            CONTROL[eo] == ed -> if (same) "정관" else "편관"
-            else -> "-"
-        }
+    return when {
+        // 1) 같은 오행 → 비견/겁재
+        targetEl == myEl ->
+            if (same) "비견" else "겁재"
+
+        // 2) 내가 생하는 오행 → 식신/상관
+        targetEl == CYCLE[(idx(myEl) + 1) % 5] ->
+            if (same) "식신" else "상관"
+
+        // 3) 내가 극하는 오행 → 편재/정재 (정석)
+        targetEl == CONTROL[myEl] ->
+            if (same) "편재" else "정재"
+
+        // 4) 나를 극하는 오행 → 편관/정관
+        CONTROL[targetEl] == myEl ->
+            if (same) "편관" else "정관"
+
+        // 5) 나를 생하는 오행 → 편인/정인
+        targetEl == CYCLE[(idx(myEl) + 4) % 5] ->
+            if (same) "편인" else "정인"
+
+        else -> "-"
     }
+}
+
 
     /** 시지 계산 (앱 그대로) */
     private fun hourBranchIndex(hour: Int, minute: Int, pivot: Int): Int {
@@ -368,3 +385,4 @@ object SajuService {
         )
     }
 }
+
