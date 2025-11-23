@@ -7,9 +7,14 @@ data class SeasonPoint(val name: String, val dt: LocalDateTime)
 
 object SeasonRepo {
 
-    // -----------------------------------------------------
-    // 내부 공통: 특정 년도들의 절기 로드
-    // -----------------------------------------------------
+    // 정절기(대운수 기준 절기)
+    private val PRINCIPAL_TERMS = setOf(
+        "입춘", "경칩", "청명",
+        "입하", "망종", "소서",
+        "입추", "백로", "한로",
+        "입동", "대설", "소한"
+    )
+
     private fun selectYears(vararg years: Int): List<SeasonPoint> {
         val placeholders = years.joinToString(",") { "?" }
         val sql = """
@@ -42,64 +47,46 @@ object SeasonRepo {
         }
     }
 
-    // -----------------------------------------------------
-    // ✨ 정절기만 포함한 전체 리스트 생성 (안정 버전)
-    // -----------------------------------------------------
-    private val PRINCIPAL_TERMS = setOf(
-        "입춘", "경칩", "청명",
-        "입하", "망종", "소서",
-        "입추", "백로", "한로",
-        "입동", "대설", "소한"
-    )
-
-    private fun filterPrincipal(list: List<SeasonPoint>): List<SeasonPoint> =
-        list.filter { it.name in PRINCIPAL_TERMS }
-
-    // -----------------------------------------------------
-    // ✨ 무한 루프 없는 nextAfter
-    // -----------------------------------------------------
+    /** 기준 시각 이후 첫 정절기 */
     fun nextAfter(y: Int, m: Int, d: Int, h: Int): SeasonPoint {
         val base = LocalDateTime.of(y, m, d, h, 0)
 
-        // 현재 년도 + 이후 5년까지 로딩
-        val years = (y..(y + 5)).toList().toTypedArray()
+        // 3년치 절기 로드 → 정절기만 필터링
+        val list = selectYears(y, y + 1, y + 2)
+            .filter { it.name in PRINCIPAL_TERMS }
 
-        val full = selectYears(*years)
-        val principals = filterPrincipal(full)
+        return list.firstOrNull { it.dt.isAfter(base) }
+            ?: run {
+                val nextList = selectYears(y + 2, y + 3)
+                    .filter { it.name in PRINCIPAL_TERMS }
 
-        // base 이후 첫 정절기
-        return principals.firstOrNull { it.dt.isAfter(base) }
-            ?: principals.last() // 없으면 마지막 정절기라도 반환 (무한루프 방지)
+                nextList.first { it.dt.isAfter(base) }
+            }
     }
 
-    // -----------------------------------------------------
-    // ✨ 무한 루프 없는 prevBefore
-    // -----------------------------------------------------
+    /** 기준 시각 이전 마지막 정절기 */
     fun prevBefore(y: Int, m: Int, d: Int, h: Int): SeasonPoint {
         val base = LocalDateTime.of(y, m, d, h, 0)
 
-        // 과거 5년~현재까지 로딩
-        val years = ((y - 5)..y).toList().toTypedArray()
+        val list = selectYears(y - 2, y - 1, y)
+            .filter { it.name in PRINCIPAL_TERMS }
 
-        val full = selectYears(*years)
-        val principals = filterPrincipal(full)
+        return list.lastOrNull { it.dt.isBefore(base) }
+            ?: run {
+                val prevList = selectYears(y - 3, y - 2)
+                    .filter { it.name in PRINCIPAL_TERMS }
 
-        // base 이전 마지막 정절기
-        return principals.lastOrNull { it.dt.isBefore(base) }
-            ?: principals.first() // 없으면 첫 정절기 반환
+                prevList.last { it.dt.isBefore(base) }
+            }
     }
 
-    // -----------------------------------------------------
-    // 현재 기준 절기 (가장 가까운 과거 절기)
-    // -----------------------------------------------------
+    /** 기준 시각과 가장 가까운 ‘현재 정절기’ */
     fun currentAt(y: Int, m: Int, d: Int, h: Int): SeasonPoint {
         val base = LocalDateTime.of(y, m, d, h, 0)
-        val years = ((y - 1)..(y + 1)).toList().toTypedArray()
 
-        val full = selectYears(*years)
-        val principals = filterPrincipal(full)
+        val list = selectYears(y - 1, y, y + 1)
+            .filter { it.name in PRINCIPAL_TERMS }
 
-        return principals.lastOrNull { !it.dt.isAfter(base) }
-            ?: principals.first()
+        return list.lastOrNull { !it.dt.isAfter(base) } ?: list.first()
     }
 }
