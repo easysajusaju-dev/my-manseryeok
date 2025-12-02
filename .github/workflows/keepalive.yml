@@ -33,7 +33,9 @@ jobs:
 
       - name: 운영 - Ping Order Logger GAS
         run: curl -fsS -m 10 "https://script.google.com/macros/s/AKfycbzhi4556hgBKctN3KVBlPdkl1vFD3oG7Wv7Hdm6pk16VGG8OF6q6EaPT8t_5WTX87Jb/exec?ping=1" || true
-
+        
+      - name: 운영 - Ping Products GAS
+        run: curl -fsS -m 10 "https://script.google.com/macros/s/AKfycby9Fo7PUR9ehqMA2SqqbinieojtbWg_QB5lLIECtzSr5PgZydRaxzX8-Y9-JfnqwiIhfA/exec?ping=1" || true
 
       # ===== 테스트용 서비스 =====
 
